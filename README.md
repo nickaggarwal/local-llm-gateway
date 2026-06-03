@@ -81,10 +81,12 @@ auto-selects, or you can force one with `--backend` (CLI), the **Backend** dropd
   - **NVIDIA** (CUDA) — used automatically by stock Ollama. Detected via NVML / `nvidia-smi`.
   - **AMD Radeon** (ROCm) — used automatically by stock Ollama where ROCm is supported.
     Detected via DRM sysfs (`/sys/class/drm`) or `rocm-smi`.
-  - **Intel Arc** (XMX / SYCL) — **not** in stock Ollama; run the
-    [IPEX-LLM Ollama build](https://github.com/intel-analytics/ipex-llm) and point
-    `OLLAMA_HOST` at it (same HTTP API, so this backend talks to it unchanged). Detected
-    via DRM sysfs.
+  - **Intel Arc / Xe** (XMX / SYCL) — **not** in stock Ollama; uses the
+    [IPEX-LLM Ollama build](https://github.com/intel-analytics/ipex-llm) (same HTTP API on
+    the same port, so the gateway is unchanged). **Automated by the launcher**: install the
+    IPEX-LLM Ollama and set `IPEX_LLM_OLLAMA=/path/to/ollama`; when Intel is the only GPU,
+    `start.sh` / `start.ps1` launch that binary with the SYCL env (`OLLAMA_NUM_GPU`,
+    `ZES_ENABLE_SYSMAN`, `SYCL_CACHE_PERSISTENT`) instead of stock Ollama. Detected via DRM sysfs.
 
   > The acceleration above is via the **GPU** (CUDA / ROCm / SYCL-XMX). The *dedicated
   > NPUs* on these platforms (AMD XDNA / "Ryzen AI", Intel Core Ultra NPU) are a separate

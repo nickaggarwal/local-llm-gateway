@@ -25,11 +25,34 @@ PYTHON=""
 for c in python3 python; do have "$c" && { PYTHON="$c"; break; }; done
 [ -n "$PYTHON" ] || { echo "ERROR: Python not found."; exit 1; }
 
+# Choose the Ollama binary. When Intel is the *only* GPU (no NVIDIA/AMD that stock
+# Ollama would accelerate), prefer an IPEX-LLM Ollama build for Arc/Xe (SYCL/XMX).
+# It speaks the same HTTP API on the same port, so the gateway is unchanged.
+# Enable it by setting IPEX_LLM_OLLAMA=/path/to/ollama.
+OLLAMA_BIN="${OLLAMA_BIN:-ollama}"
+intel_only_gpu() {
+  "$PYTHON" -c "import hardware,sys; v={g.vendor for g in hardware.detect_gpus()}; sys.exit(0 if 'intel' in v and not (v & {'nvidia','amd'}) else 1)" 2>/dev/null
+}
+
+if intel_only_gpu; then
+  if [ -n "${IPEX_LLM_OLLAMA:-}" ] && [ -x "${IPEX_LLM_OLLAMA}" ]; then
+    OLLAMA_BIN="$IPEX_LLM_OLLAMA"
+    export OLLAMA_NUM_GPU="${OLLAMA_NUM_GPU:-999}"
+    export ZES_ENABLE_SYSMAN="${ZES_ENABLE_SYSMAN:-1}"
+    export SYCL_CACHE_PERSISTENT="${SYCL_CACHE_PERSISTENT:-1}"
+    echo "==> Intel GPU detected — using IPEX-LLM Ollama: $OLLAMA_BIN"
+  else
+    echo "==> Intel GPU detected. For GPU acceleration, install the IPEX-LLM Ollama build and"
+    echo "    set IPEX_LLM_OLLAMA=/path/to/ollama  (https://github.com/intel-analytics/ipex-llm)."
+    echo "    Continuing with stock Ollama for now."
+  fi
+fi
+
 ensure_ollama_host() {
-  have ollama || { echo "ERROR: Ollama not found. Install: https://ollama.com/download"; exit 1; }
+  have "$OLLAMA_BIN" || { echo "ERROR: Ollama not found ($OLLAMA_BIN). Install: https://ollama.com/download"; exit 1; }
   if ollama_up; then echo "==> Ollama already running."; return; fi
-  echo "==> Starting Ollama..."
-  ollama serve >"${TMPDIR:-/tmp}/ollama.log" 2>&1 &
+  echo "==> Starting Ollama ($OLLAMA_BIN)..."
+  "$OLLAMA_BIN" serve >"${TMPDIR:-/tmp}/ollama.log" 2>&1 &
   for _ in $(seq 1 30); do ollama_up && break; sleep 1; done
   ollama_up || { echo "ERROR: Ollama failed to start. See ${TMPDIR:-/tmp}/ollama.log"; exit 1; }
   echo "==> Ollama is up."
