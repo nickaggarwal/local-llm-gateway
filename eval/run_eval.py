@@ -72,8 +72,12 @@ def eval_task(task: str, pull: bool, limit: int | None) -> None:
         if not model_present(cand.model, have):
             if pull:
                 print(f"  pulling {cand.model} ...")
-                gateway.ensure_model(cand.model)
-                have = gateway.local_models()
+                try:
+                    gateway.ensure_model(cand.model)
+                    have = gateway.local_models()
+                except Exception as e:  # noqa: BLE001
+                    print(f"  !! could not pull {cand.model}: {e} (skipping)")
+                    continue
             else:
                 print(f"  skip {cand.model} (not downloaded; use --pull)")
                 continue

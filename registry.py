@@ -48,7 +48,7 @@ class Task:
 #   chat        qwen2.5:7b           qwen2.5:14b          qwen2.5:32b          qwen2.5:32b
 #   code        qwen2.5-coder:7b     qwen2.5-coder:14b    qwen2.5-coder:32b    qwen2.5-coder:32b
 #   summarize   qwen2.5:7b           qwen2.5:14b          qwen2.5:14b          qwen2.5:14b
-#   embed       mxbai-embed-large    mxbai-embed-large    mxbai-embed-large    mxbai-embed-large
+#   embed       bge-m3               bge-m3               bge-m3               bge-m3
 TASKS: dict[str, Task] = {
     "ocr": Task(
         name="ocr",
@@ -106,9 +106,13 @@ TASKS: dict[str, Task] = {
         name="embed",
         kind="embed",
         description="Produce vector embeddings for text.",
+        # bge-m3 over mxbai-embed-large: mxbai truncates at 512 tokens, which
+        # silently drops long inputs; bge-m3 has an 8192-token window, is
+        # multilingual, and is competitive on MTEB. nomic is the lightweight
+        # fallback (also 8192 ctx) for very low-RAM / CPU-only machines.
         tiers=[
             ModelTier("nomic-embed-text", 2),
-            ModelTier("mxbai-embed-large", 16),
+            ModelTier("bge-m3", 8),
         ],
     ),
 }

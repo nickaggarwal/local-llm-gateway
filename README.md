@@ -75,16 +75,28 @@ so a 16 GB laptop runs ~7B models, 24 GB runs ~14B, and 32–48 GB runs ~32B.
 | `chat` | qwen2.5:7b | qwen2.5:14b | qwen2.5:32b | qwen2.5:32b |
 | `code` | qwen2.5-coder:7b | qwen2.5-coder:14b | qwen2.5-coder:32b | qwen2.5-coder:32b |
 | `summarize` | qwen2.5:7b | qwen2.5:14b | qwen2.5:14b | qwen2.5:14b |
-| `embed` | mxbai-embed-large | mxbai-embed-large | mxbai-embed-large | mxbai-embed-large |
+| `embed` | bge-m3 | bge-m3 | bge-m3 | bge-m3 |
 
 Machines under 16 GB fall back to 3B models (and `nomic-embed-text` for embeddings).
 You can always override with `--model` (CLI) or the sidebar (UI).
 
-**Why these models (2026):** Qwen2.5-VL leads local VLMs on document/OCR benchmarks
-(DocVQA 95.7); Qwen2.5-Coder 32B matches GPT-4o on HumanEval (92.7%); Qwen2.5 is the
-strongest general open model at each size on consumer hardware; nomic-embed-text /
-mxbai-embed-large are the standard local embedding models for RAG. Sources are linked
-at the bottom of this file.
+**Why these models (2026 research):**
+
+- **OCR / vision** — Qwen2.5-VL leads local VLMs on document benchmarks (DocVQA 95.7);
+  the top OCR finetune olmOCR-2 is built on Qwen2.5-VL-7B. Main cross-family alternative:
+  MiniCPM-V. (LLaVA / Granite-vision / Llama3.2-vision rate lower with more hallucination.)
+- **code** — Qwen2.5-Coder is state-of-the-art open source (32B scores 92.7% HumanEval,
+  beating GPT-4o); DeepSeek-Coder-V2 is a faster MoE alternative and Codestral is best at
+  fill-in-the-middle completion.
+- **chat / summarize** — Qwen2.5 is strongest per-size on consumer hardware; Phi-4 14B is
+  notably strong on STEM/reasoning, with Llama 3.1, Gemma 2, and Mistral as alternatives.
+- **embed** — switched the default to **bge-m3** (8192-token context, multilingual):
+  mxbai-embed-large scores higher on English retrieval but **silently truncates at 512
+  tokens**, which corrupts embeddings of long text. nomic-embed-text is the lightweight
+  fallback. Qwen3-Embedding tops MTEB but is heavy.
+
+These alternatives are wired into the [eval ladders](eval/candidates.py) so the bake-off
+compares model *families*, not just Qwen sizes. Sources are linked at the bottom.
 
 ## Manual setup (without Docker)
 
@@ -164,3 +176,7 @@ curl -s -X POST localhost:8000/run-image/ocr -F "file=@receipt.png"
 - [Best Local Coding Models Ranked, Every VRAM Tier (InsiderLLM)](https://insiderllm.com/guides/best-local-coding-models-2026/) — Qwen2.5-Coder per VRAM tier
 - [Ollama VRAM Requirements: Complete 2026 Guide (LocalLLM.in)](https://localllm.in/blog/ollama-vram-requirements-for-local-llms)
 - [Ollama Embedding Models: Benchmarks, VRAM (Morph)](https://www.morphllm.com/ollama-embedding-models) — nomic-embed-text / mxbai-embed-large
+- [Which Embedding Model Should You Use in 2026? (10-model benchmark)](https://zc277584121.github.io/rag/2026/03/20/embedding-models-benchmark-2026.html) — bge-m3 vs mxbai 512-ctx limit
+- [Best Open-Weight Embedding Models 2026 (Presenc)](https://presenc.ai/research/best-open-weight-embedding-models-2026) — Qwen3-Embedding / bge-m3 / MTEB
+- [Qwen2.5-Coder vs DeepSeek vs Codestral (2026)](https://www.aimadetools.com/blog/best-open-source-coding-model-2026/)
+- [Show HN: Qwen-2.5-32B best open source OCR model](https://news.ycombinator.com/item?id=43549072) — olmOCR / Qwen2.5-VL
