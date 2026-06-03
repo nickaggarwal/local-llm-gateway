@@ -1,33 +1,124 @@
 [
   {
-    "image": "images/vision_shapes1.png",
-    "question": "How many red circles are in the image? Answer with just the number.",
+    "image": "images/vqa/vqa_000.jpg",
+    "question": "Where is he looking? Answer in a single word or short phrase.",
     "accept": [
-      "3",
-      "three"
-    ]
+      "down"
+    ],
+    "_source": "lmms-lab/VQAv2 qid=262148000"
   },
   {
-    "image": "images/vision_shapes1.png",
-    "question": "How many blue squares are in the image? Answer with just the number.",
+    "image": "images/vqa/vqa_001.jpg",
+    "question": "What are the people in the background doing? Answer in a single word or short phrase.",
     "accept": [
-      "2",
-      "two"
-    ]
+      "watching"
+    ],
+    "_source": "lmms-lab/VQAv2 qid=262148001"
   },
   {
-    "image": "images/vision_shapes2.png",
-    "question": "What color is the triangle? Answer with one word.",
+    "image": "images/vqa/vqa_002.jpg",
+    "question": "What is he on top of? Answer in a single word or short phrase.",
     "accept": [
-      "green"
-    ]
+      "picnic table",
+      "table"
+    ],
+    "_source": "lmms-lab/VQAv2 qid=262148002"
   },
   {
-    "image": "images/vision_shapes2.png",
-    "question": "How many purple circles are there? Answer with just the number.",
+    "image": "images/vqa/vqa_003.jpg",
+    "question": "What website copyrighted the picture? Answer in a single word or short phrase.",
     "accept": [
-      "2",
-      "two"
-    ]
+      "foodiebakercom"
+    ],
+    "_source": "lmms-lab/VQAv2 qid=393225000"
+  },
+  {
+    "image": "images/vqa/vqa_004.jpg",
+    "question": "Is this a creamy soup? Answer in a single word or short phrase.",
+    "accept": [
+      "no"
+    ],
+    "_source": "lmms-lab/VQAv2 qid=393225001"
+  },
+  {
+    "image": "images/vqa/vqa_005.jpg",
+    "question": "Is this rice noodle soup? Answer in a single word or short phrase.",
+    "accept": [
+      "yes"
+    ],
+    "_source": "lmms-lab/VQAv2 qid=393225002"
+  },
+  {
+    "image": "images/vqa/vqa_006.jpg",
+    "question": "What is to the right of the soup? Answer in a single word or short phrase.",
+    "accept": [
+      "chopsticks"
+    ],
+    "_source": "lmms-lab/VQAv2 qid=393225003"
+  },
+  {
+    "image": "images/vqa/vqa_008.jpg",
+    "question": "How many photo's can you see? Answer in a single word or short phrase.",
+    "accept": [
+      "1",
+      "4"
+    ],
+    "_source": "lmms-lab/VQAv2 qid=393226001"
+  },
+  {
+    "image": "images/vqa/vqa_009.jpg",
+    "question": "What does the truck on the left sell? Answer in a single word or short phrase.",
+    "accept": [
+      "ice cream"
+    ],
+    "_source": "lmms-lab/VQAv2 qid=393226002"
+  },
+  {
+    "image": "images/vqa/vqa_011.jpg",
+    "question": "Is it daylight in this picture? Answer in a single word or short phrase.",
+    "accept": [
+      "yes"
+    ],
+    "_source": "lmms-lab/VQAv2 qid=240301001"
+  },
+  {
+    "image": "images/vqa/vqa_012.jpg",
+    "question": "Why is the cow laying down? Answer in a single word or short phrase.",
+    "accept": [
+      "tired"
+    ],
+    "_source": "lmms-lab/VQAv2 qid=240301002"
+  },
+  {
+    "image": "images/vqa/vqa_015.jpg",
+    "question": "How many are playing ball? Answer in a single word or short phrase.",
+    "accept": [
+      "1"
+    ],
+    "_source": "lmms-lab/VQAv2 qid=131089002"
+  },
+  {
+    "image": "images/vqa/vqa_016.jpg",
+    "question": "Is there a chain link fence in the image? Answer in a single word or short phrase.",
+    "accept": [
+      "no"
+    ],
+    "_source": "lmms-lab/VQAv2 qid=131089003"
+  },
+  {
+    "image": "images/vqa/vqa_017.jpg",
+    "question": "Is the boy playing baseball? Answer in a single word or short phrase.",
+    "accept": [
+      "yes"
+    ],
+    "_source": "lmms-lab/VQAv2 qid=131089004"
+  },
+  {
+    "image": "images/vqa/vqa_018.jpg",
+    "question": "Is that a folding chair? Answer in a single word or short phrase.",
+    "accept": [
+      "no"
+    ],
+    "_source": "lmms-lab/VQAv2 qid=262162000"
   }
 ]

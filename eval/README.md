@@ -12,8 +12,9 @@ eval/
   candidates.py     model ladders per task + footprints + RAM-fit logic
   scorers.py        objective scoring function per task (returns 0..1)
   datasets/         ground-truth datasets (one JSON per task)
-  images/           generated test images for ocr/vision
-  gen_images.py     regenerates images + ocr.json/vision.json deterministically
+  images/           OCR test images (generated) + images/vqa/ (public VQA)
+  gen_images.py     regenerates OCR images + ocr.json deterministically
+  fetch_vqa.py      builds vision.json from a public VQA dataset (VQAv2)
   run_eval.py       the pipeline
 ```
 
@@ -21,8 +22,8 @@ eval/
 
 | Task | Dataset | Metric |
 |------|---------|--------|
-| `ocr` | invoice + paragraph images with ground-truth text | 0.5·(1−char-error-rate) + 0.5·key-token coverage |
-| `vision` | shape images + counting/color questions | answer matches accepted set (exact) |
+| `ocr` | 6 generated images (invoice, paragraph, code, table, receipt, address) | 0.5·(1−char-error-rate) + 0.5·key-token coverage |
+| `vision` | 15 real images from **VQAv2** (public) + short answers | answer word-boundary-matches an accepted human answer |
 | `chat` | factual questions with canonical answers | answer contains the canonical value |
 | `code` | function specs + assert tests | functional correctness (asserts pass) |
 | `summarize` | passages with required key facts + length cap | key-fact coverage − length penalty |
@@ -33,7 +34,8 @@ eval/
 From the project root with the venv active and Ollama running:
 
 ```bash
-python eval/gen_images.py                 # once: build images + ocr/vision datasets
+python eval/gen_images.py                 # once: build OCR images + ocr.json
+python eval/fetch_vqa.py                    # once: build vision.json from public VQAv2
 python eval/run_eval.py --task embed       # one task (uses already-downloaded models)
 python eval/run_eval.py --task all          # every task
 python eval/run_eval.py --task ocr --pull   # download any missing models in the ladder
@@ -43,35 +45,43 @@ python eval/run_eval.py --task all --limit 2  # quick smoke test
 Models not yet downloaded are skipped unless you pass `--pull`. The per-tier winner
 is computed only over models that actually fit that tier's RAM budget.
 
-## Results so far (OCR bake-off)
+## Results (Apple Silicon 48 GB, Ollama 0.30.2)
 
-Run on an Apple Silicon 48 GB machine, Ollama 0.30.2, 2 OCR images (composite of
-char-error-rate and key-token coverage; higher is better):
+**OCR** — 6 generated images, composite of (1−char-error-rate) and key-token coverage:
 
-| Model | Quant | Weights | OCR score | s/example |
-|-------|-------|--------:|----------:|----------:|
-| qwen2.5vl:3b | q8_0 | 3.5 GB | **0.976** | 11.3 |
-| qwen2.5vl:7b | q4_K_M | 6.0 GB | **0.976** | 13.8 |
-| qwen2.5vl:7b | q8_0 | 9.4 GB | 0.934 | 16.1 |
-| qwen2.5vl:7b | fp16 | 17 GB | 0.934 | 21.6 |
-| minicpm-v | q4 | 5.5 GB | 0.625 | 9.0 |
+| Model | Quant | Weights | OCR score | s/ex |
+|-------|-------|--------:|----------:|-----:|
+| qwen2.5vl:3b | q8_0 | 3.5 GB | **0.987** | 9.6 |
+| qwen2.5vl:7b | q4_K_M | 6.0 GB | **0.983** | 12.1 |
+| qwen2.5vl:7b | q8_0 | 9.4 GB | 0.969 | 12.8 |
+| qwen2.5vl:7b | fp16 | 17 GB | 0.969 | 16.5 |
+| minicpm-v | q4 | 5.5 GB | 0.767 | 6.2 |
 | qwen2.5vl:32b | q4_K_M | 21 GB | — | fails to load CLIP projector on 0.30.2 |
+
+**Vision (VQAv2, 15 real images)** — answer matches an accepted human answer:
+
+| Model | Quant | Vision score | s/ex |
+|-------|-------|-------------:|-----:|
+| minicpm-v | q4 | **0.867** | 1.6 |
+| qwen2.5vl:3b | q8_0 | 0.800 | 3.2 |
+| qwen2.5vl:7b | q4_K_M | 0.800 | 4.0 |
+| qwen2.5vl:7b | q8_0 | 0.800 | 3.9 |
+| qwen2.5vl:7b | fp16 | 0.800 | 4.4 |
 
 **Findings:**
 
-1. **Family matters most.** Qwen2.5-VL (~0.95) clearly beats MiniCPM-V (0.625) on
-   OCR — consistent with 2026 research.
-2. **Quantization barely matters for OCR.** q4 / q8 / fp16 of the same 7B model are
-   within noise of each other (and the higher-precision runs were actually a hair
-   lower here). So for the small-full-precision vs big-quantized question on OCR:
-   neither helps — **q4 is the right choice**, higher precision just costs RAM and speed.
-3. **Size is saturated.** 3B and 7B tie on this set, so the gateway tops OCR/vision
-   out at 7B; 32B adds cost with no measurable OCR gain (and won't load here).
+1. **Best model depends on the sub-task.** Qwen2.5-VL wins OCR (~0.98 vs MiniCPM-V's
+   0.77); MiniCPM-V edges general VQA (0.867 vs 0.800) and is ~2.5× faster. Pick per use case.
+2. **Quantization barely matters.** Across OCR and vision, q4 / q8 / fp16 of the same
+   model score within noise (higher precision was if anything a hair lower). So for the
+   small-full-precision vs big-quantized question: **q4 is the right choice** — higher
+   precision just costs RAM and speed for no measurable accuracy gain.
+3. **Size is saturated for these tasks.** 3B ≈ 7B, so the gateway tops OCR/vision out at
+   7B; 32B adds cost with no measurable gain (and won't load on this Ollama build).
 
-Caveat: only 2 OCR examples, so treat the small score differences as noise — the
-robust signals are (1) and the family gap. Add more examples to `datasets/ocr.json`
-to tighten the numbers. The `vision` shape-counting set is too easy (all VLMs score
-1.0) and needs harder questions to discriminate.
+Caveats: 6 OCR + 15 VQA examples — small, so treat sub-point differences as noise; the
+robust signals are the per-task family ranking and the quant plateau. Grow the datasets
+(`gen_images.py`, `fetch_vqa.py`) to tighten the numbers.
 
 ## Tuning the fit model
 

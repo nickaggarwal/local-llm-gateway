@@ -37,8 +37,13 @@ def score_ocr(output: str, ex: dict) -> float:
 
 
 def _accept_match(output: str, accept: list[str]) -> float:
+    """Word-boundary match so '1' doesn't hit '10' and 'no' doesn't hit 'now'."""
     o = _norm(output).lower()
-    return 1.0 if any(_norm(a).lower() in o for a in accept) else 0.0
+    for a in accept:
+        term = _norm(a).lower()
+        if term and re.search(rf"(?<!\w){re.escape(term)}(?!\w)", o):
+            return 1.0
+    return 0.0
 
 
 def score_vision(output: str, ex: dict) -> float:

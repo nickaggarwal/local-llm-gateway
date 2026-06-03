@@ -27,5 +27,55 @@
       "(555) 010-2398",
       "$1,024.75"
     ]
+  },
+  {
+    "image": "images/ocr_code.png",
+    "truth": "def binary_search(arr, x):\n    lo, hi = 0, len(arr) - 1\n    while lo <= hi:\n        mid = (lo + hi) // 2\n        if arr[mid] == x: return mid\n        elif arr[mid] < x: lo = mid + 1\n        else: hi = mid - 1\n    return -1   # not found",
+    "key_tokens": [
+      "binary_search(arr, x)",
+      "len(arr) - 1",
+      "(lo + hi) // 2",
+      "lo = mid + 1",
+      "hi = mid - 1",
+      "return -1"
+    ]
+  },
+  {
+    "image": "images/ocr_table.png",
+    "truth": "ID     Date        Amount    Rate%\n0012   2026-01-05    1250.00   3.25\n0034   2026-02-18     980.49   3.10\n0156   2026-03-30   12045.75   2.95\n1099   2026-11-15      -42.00   0.00\nSUM                 14234.24",
+    "key_tokens": [
+      "0012",
+      "1250.00",
+      "3.25",
+      "12045.75",
+      "-42.00",
+      "14234.24",
+      "0156"
+    ]
+  },
+  {
+    "image": "images/ocr_receipt.png",
+    "truth": "QuickMart #4471\n2x Coffee @ 3.49 ......  6.98\n1x Bagel  @ 2.25 ......  2.25\nSUBTOTAL ............... 9.23\nVAT 7% ................. 0.65\nTOTAL .................. 9.88\nCARD **** 4012   AUTH 00731",
+    "key_tokens": [
+      "QuickMart #4471",
+      "6.98",
+      "2.25",
+      "9.23",
+      "0.65",
+      "9.88",
+      "4012",
+      "00731"
+    ]
+  },
+  {
+    "image": "images/ocr_address.png",
+    "truth": "SHIP TO:\nDr. Jane Q. McAllister-Ng\nApt 12-C, 4587 N. 1st Ave.\nSt. Paul, MN 55101-2293\nTracking: 1Z-999-AA1-01-2345-6784",
+    "key_tokens": [
+      "McAllister-Ng",
+      "Apt 12-C",
+      "4587 N. 1st Ave.",
+      "55101-2293",
+      "1Z-999-AA1-01-2345-6784"
+    ]
   }
 ]
