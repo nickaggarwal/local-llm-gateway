@@ -7,7 +7,8 @@ use, and run it — entirely on your laptop. No data leaves the machine. Powered
 ## One-command start (native, fast)
 
 The launcher runs **natively** for full GPU speed: it starts host Ollama, sets up a
-local virtualenv, installs deps, and opens the UI. No flags, no Docker.
+local virtualenv, installs deps, prepares NPU models if an NPU is present (`convert.py
+--auto`, a no-op otherwise), and opens the UI. No flags, no Docker.
 
 **macOS / Linux / WSL / Git Bash:**
 
@@ -225,23 +226,40 @@ curl -s -X POST localhost:8000/run-image/ocr -F "file=@receipt.png"
 - **Linux**: `docker compose up` bundles Ollama; uncomment the GPU block in
   `docker-compose.yml` to use an NVIDIA GPU (needs nvidia-container-toolkit).
 
+## Preparing NPU models (conversion)
+
+NPU models aren't plain Ollama pulls — each vendor needs a device-specific artifact
+(OpenVINO IR, a QNN/Genie bundle, or VitisAI-quantized ONNX). The gateway **prepares it
+automatically on first use**: each NPU backend's model cache is checked, and if it's empty
+the converter ([`backends/convert.py`](backends/convert.py)) either **downloads a
+pre-compiled equivalent** or **runs the vendor conversion pipeline** into that cache.
+
+You can also prepare ahead of time with the [`convert.py`](convert.py) script (it
+auto-detects the NPU, or pass `--backend`):
+
+```bash
+python convert.py chat                  # prepare 'chat' for the detected NPU
+python convert.py --all                 # prepare every task the backend supports
+python convert.py ocr --backend qualcomm
+```
+
+Either way needs the vendor SDK installed on the target device — if a conversion tool is
+missing, the converter raises the exact command to run. The vendor SDK + per-device
+setup is described below.
+
 ## Qualcomm NPU setup
 
-The Qualcomm backend targets the **Hexagon NPU** on Snapdragon devices and needs three
-things present on that device (it can't run on a Mac/x86 host):
+The Qualcomm backend targets the **Hexagon NPU** on Snapdragon devices (it can't run on a
+Mac/x86 host):
 
 1. **Qualcomm AI Engine Direct (QNN) SDK** with the **Genie** runtime — set
    `QNN_SDK_ROOT` and put `genie-t2t-run` on `PATH`. For ONNX models also install
    `onnxruntime-qnn`.
-2. **A compiled model artifact per task.** AI Hub models are compiled for a specific
-   device. Export the one you want with `qai-hub-models`, e.g.:
-   ```bash
-   pip install qai-hub-models
-   python -m qai_hub_models.models.llama_v3_2_3b_chat_quantized.export \
-     --device "Snapdragon X Elite CRD"
-   ```
-   Place the produced artifact + `genie_config.json` under
-   `~/.cache/qai-hub-gateway/<model>/` (override with `QAI_HUB_GATEWAY_CACHE`).
+2. **Model artifact.** Prepared automatically on first use (or via `python convert.py
+   <task> --backend qualcomm`), which runs the AI Hub export/compile for your device — set
+   `QAI_HUB_DEVICE` (default `"Snapdragon X Elite CRD"`). Needs `pip install qai-hub-models`
+   and an AI Hub API token. Artifacts cache under `~/.cache/qai-hub-gateway/<model>/`
+   (override `QAI_HUB_GATEWAY_CACHE`).
 3. Run it: `python cli.py run chat "Hi" --backend qualcomm`.
 
 The task→model map lives in [`backends/qualcomm.py`](backends/qualcomm.py)
@@ -255,12 +273,10 @@ The `intel-npu` backend targets the **Intel Core Ultra NPU** via OpenVINO:
 
 1. Install the runtime: `pip install optimum[openvino]` (plus an OpenVINO build that
    exposes the `NPU` device).
-2. Export the model to OpenVINO IR per task, e.g.:
-   ```bash
-   optimum-cli export openvino --model meta-llama/Llama-3.2-3B-Instruct \
-     --weight-format int4 "~/.cache/ov-npu-gateway/meta-llama__Llama-3.2-3B-Instruct"
-   ```
-   (cache dir overridable with `OV_NPU_GATEWAY_CACHE`).
+2. **Model artifact.** Prepared automatically on first use (or via `python convert.py
+   <task> --backend intel-npu`): the converter runs `optimum-cli export openvino
+   --weight-format int4`, or downloads a ready-made IR if an `OvModel.precompiled` repo is
+   mapped. IR caches under `~/.cache/ov-npu-gateway/<model>/` (override `OV_NPU_GATEWAY_CACHE`).
 3. Run it: `python cli.py run chat "Hi" --backend intel-npu`.
 
 Generation runs end to end through optimum-intel (`OVModelForCausalLM`, `device="NPU"`).
@@ -272,10 +288,11 @@ The task→model map lives in [`backends/intel_npu.py`](backends/intel_npu.py)
 The `amd-npu` backend targets the **AMD XDNA NPU** via ONNX Runtime's VitisAI EP:
 
 1. Install the **Ryzen AI SW** stack (provides the VitisAI-enabled `onnxruntime`).
-2. Prepare a Ryzen-AI-quantized ONNX model per task — download a prebuilt `amd/*` ONNX
-   repo or quantize with `vai_q_onnx` — and place the `*.onnx` + VitisAI config under
-   `~/.cache/ryzen-ai-gateway/<model>/` (override with `RYZEN_AI_GATEWAY_CACHE`; point
-   `VAIP_CONFIG` at the config file).
+2. **Model artifact.** Prepared automatically on first use (or via `python convert.py
+   <task> --backend amd-npu`): the converter downloads the pre-quantized `amd/*` ONNX repo
+   mapped for the task. (For a model you quantize yourself with `vai_q_onnx`, drop the
+   `*.onnx` in the cache dir instead.) Caches under `~/.cache/ryzen-ai-gateway/<model>/`
+   (override `RYZEN_AI_GATEWAY_CACHE`; point `VAIP_CONFIG` at the config file).
 3. Run it: `python cli.py run chat "Hi" --backend amd-npu`.
 
 The scaffold loads/validates the VitisAI session; the per-model tokenizer + decode loop is
@@ -285,10 +302,17 @@ Ryzen AI release.
 
 ## Customizing
 
-- Switch backends per call with `--backend {auto,ollama,qualcomm}` (or `LLM_GATEWAY_BACKEND`).
-- Add or change models per task in [`registry.py`](registry.py) — each task has memory-sized tiers.
+- Switch backends per call with `--backend {auto,ollama,qualcomm,intel-npu,amd-npu}`
+  (or `LLM_GATEWAY_BACKEND`).
+- **Change the model per task** — the map depends on the backend:
+  - Ollama: [`registry.py`](registry.py) (`TASKS`), with memory-sized tiers.
+  - Qualcomm: `QUALCOMM_MODELS` in [`backends/qualcomm.py`](backends/qualcomm.py).
+  - Intel NPU: `INTEL_MODELS` in [`backends/intel_npu.py`](backends/intel_npu.py).
+  - AMD NPU: `AMD_MODELS` in [`backends/amd_npu.py`](backends/amd_npu.py).
+  - Or override per call with `--model <id>` on any backend.
 - Add a whole new task type by adding an entry to `TASKS`.
 - Add a new backend by implementing the `Backend` interface in [`backends/base.py`](backends/base.py).
+- Add a conversion pipeline for a new NPU runtime in [`backends/convert.py`](backends/convert.py).
 
 ## Model selection — sources
 

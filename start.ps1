@@ -35,5 +35,9 @@ if (-not (Test-Path ".venv")) { Write-Host "==> Creating virtualenv..."; & $pyth
 Write-Host "==> Installing dependencies..."
 python -m pip install -q --upgrade pip
 python -m pip install -q -r requirements.txt
+# Prepare NPU models if an NPU is present and its cache is empty (no-op otherwise).
+Write-Host "==> Checking NPU model cache..."
+python convert.py --auto
+if ($LASTEXITCODE -ne 0) { Write-Host "WARN: NPU model preparation skipped/failed; continuing with Ollama." }
 Write-Host "==> Launching UI at $UiUrl  (Ctrl+C to stop)"
 streamlit run app.py --server.address 0.0.0.0 --server.port 8501 --server.headless true

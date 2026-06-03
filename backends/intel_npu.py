@@ -31,6 +31,7 @@ from .base import Backend, BackendUnavailable, OnProgress
 class OvModel:
     hf_model: str  # source id for `optimum-cli export openvino`
     runtime: str = "openvino"
+    precompiled: str | None = None  # optional HF repo of ready-made OpenVINO IR to download instead
 
 
 # Text tasks share one small instruct model (as the Qualcomm backend does).
@@ -66,6 +67,12 @@ class IntelNpuBackend(Backend):
     def _model_dir(self, model: str) -> Path:
         return _CACHE / model.replace("/", "__")
 
+    def _spec_for(self, model: str) -> OvModel:
+        for spec in INTEL_MODELS.values():
+            if spec.hf_model == model:
+                return spec
+        return OvModel(model)  # an override id: export from source, no precompiled repo
+
     def _require_available(self) -> None:
         if not self.is_available():
             raise BackendUnavailable(
@@ -78,10 +85,11 @@ class IntelNpuBackend(Backend):
         model_dir = self._model_dir(model)
         if (model_dir / "openvino_model.xml").exists():
             return
-        raise BackendUnavailable(
-            f"OpenVINO IR for '{model}' not found in {model_dir}. Export it first:\n"
-            f"  pip install optimum[openvino]\n"
-            f'  optimum-cli export openvino --model {model} --weight-format int4 "{model_dir}"'
+        # Not cached yet: download a pre-compiled IR if mapped, else export from source.
+        from . import convert
+
+        convert.prepare_openvino(
+            model, model_dir, precompiled=self._spec_for(model).precompiled, on_progress=on_progress
         )
 
     def generate(self, model: str, prompt: str, image_path: str | None = None) -> str:

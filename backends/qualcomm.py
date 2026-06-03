@@ -97,15 +97,11 @@ class QualcommBackend(Backend):
         model_dir = _CACHE / model
         if model_dir.exists() and any(model_dir.iterdir()):
             return
-        # We deliberately do not run a cloud compile job here (it needs an AI Hub
-        # API token and minutes of NPU compile time). Point the user at the
-        # documented export step that produces the artifact + Genie config.
-        raise BackendUnavailable(
-            f"compiled artifact for '{model}' not found in {model_dir}. Export it "
-            f"for your device first, e.g.:\n"
-            f"  pip install qai-hub-models\n"
-            f'  python -m qai_hub_models.models.{model}.export --device "Snapdragon X Elite CRD"\n'
-            f"then place the produced .bin/.onnx and genie_config.json under {model_dir}."
+        # Not cached yet: run the AI Hub export/compile pipeline for this device.
+        from . import convert
+
+        convert.prepare_qnn(
+            model, model_dir, device=os.environ.get("QAI_HUB_DEVICE"), on_progress=on_progress
         )
 
     def generate(self, model: str, prompt: str, image_path: str | None = None) -> str:

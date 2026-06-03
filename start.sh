@@ -50,5 +50,9 @@ echo "==> Installing dependencies..."
 python -m pip install -q --upgrade pip
 python -m pip install -q -r requirements.txt
 
+# Prepare NPU models if an NPU is present and its cache is empty (no-op otherwise).
+echo "==> Checking NPU model cache..."
+python convert.py --auto || echo "WARN: NPU model preparation skipped/failed; continuing with Ollama."
+
 echo "==> Launching UI at $UI_URL  (Ctrl+C to stop)"
 exec streamlit run app.py --server.address 0.0.0.0 --server.port 8501 --server.headless true

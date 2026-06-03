@@ -78,11 +78,10 @@ class AmdNpuBackend(Backend):
         model_dir = self._model_dir(model)
         if model_dir.exists() and any(model_dir.glob("*.onnx")):
             return
-        raise BackendUnavailable(
-            f"quantized ONNX for '{model}' not found in {model_dir}. Prepare it with the "
-            f"Ryzen AI flow first (download a prebuilt amd/* ONNX repo, or quantize with "
-            f"vai_q_onnx), and place the *.onnx + VitisAI config under {model_dir}."
-        )
+        # Not cached yet: download the pre-quantized Ryzen AI ONNX repo (amd/*).
+        from . import convert
+
+        convert.prepare_vitisai(model, model_dir, on_progress=on_progress)
 
     def generate(self, model: str, prompt: str, image_path: str | None = None) -> str:
         self._require_available()
