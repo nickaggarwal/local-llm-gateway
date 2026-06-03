@@ -1,0 +1,32 @@
+[
+  {
+    "query": "How do I reset my account password?",
+    "relevant": "To change your password, go to Settings, click Security, and select Reset Password.",
+    "distractors": ["Our office is open Monday through Friday from 9am to 5pm.", "The annual subscription costs 99 dollars per year.", "You can upload profile photos in PNG or JPG format."]
+  },
+  {
+    "query": "What is the boiling point of water at sea level?",
+    "relevant": "At standard atmospheric pressure, water boils at 100 degrees Celsius.",
+    "distractors": ["Ice forms when temperatures drop below freezing.", "The Pacific is the largest ocean on Earth.", "Humidity measures the amount of water vapor in the air."]
+  },
+  {
+    "query": "How can I improve my running endurance?",
+    "relevant": "Gradually increasing your weekly mileage and adding long slow runs builds aerobic endurance over time.",
+    "distractors": ["A balanced diet includes proteins, fats, and carbohydrates.", "Stretching before bed can improve sleep quality.", "Weightlifting builds muscle strength and power."]
+  },
+  {
+    "query": "What causes the seasons on Earth?",
+    "relevant": "Seasons are caused by the tilt of Earth's axis as it orbits the Sun, changing the angle of sunlight.",
+    "distractors": ["The Moon causes ocean tides through gravity.", "A solar eclipse occurs when the Moon blocks the Sun.", "Earth rotates once every 24 hours, creating day and night."]
+  },
+  {
+    "query": "How do I make my Python code run faster?",
+    "relevant": "Profile your code to find bottlenecks, then optimize hot loops, use built-in functions, and consider vectorization with NumPy.",
+    "distractors": ["Python was created by Guido van Rossum in 1991.", "Indentation in Python defines code blocks.", "You can install packages using the pip command."]
+  },
+  {
+    "query": "What should I feed a new puppy?",
+    "relevant": "Young puppies need specially formulated puppy food several times a day to support healthy growth.",
+    "distractors": ["Cats are obligate carnivores and need taurine in their diet.", "Regular vet checkups keep pets healthy.", "Dogs are descended from wolves domesticated thousands of years ago."]
+  }
+]

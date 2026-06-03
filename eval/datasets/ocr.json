@@ -1,0 +1,31 @@
+[
+  {
+    "image": "images/ocr_invoice.png",
+    "truth": "INVOICE  No: INV-2026-00731\nDate: 2026-06-03    Terms: Net 30\nBill To: Acme Corp., 1200 O'Brien St., Ste. 4B\nItem             Qty   Unit($)   Total($)\nWidget-X1         12    9.95     119.40\nBolt (M8x1.25)   144    0.08      11.52\nGasket O-ring      6    3.10      18.60\nSubtotal                        149.52\nTax (8.25%)                      12.34\nTOTAL                           161.86\nNote: lot #l00I-O0 shipped via FedEx.",
+    "key_tokens": [
+      "INV-2026-00731",
+      "O'Brien",
+      "M8x1.25",
+      "8.25%",
+      "l00I-O0",
+      "119.40",
+      "11.52",
+      "18.60",
+      "149.52",
+      "12.34",
+      "161.86"
+    ]
+  },
+  {
+    "image": "images/ocr_paragraph.png",
+    "truth": "The quick brown fox jumps over the lazy dog.\nPack my box with five dozen liquor jugs.\nOrder #A1B2-C3 ships on 07/14 at 09:45.\nContact: jane.doe@example.com  (555) 010-2398\nBalance due: $1,024.75 by EOD Friday.",
+    "key_tokens": [
+      "#A1B2-C3",
+      "07/14",
+      "09:45",
+      "jane.doe@example.com",
+      "(555) 010-2398",
+      "$1,024.75"
+    ]
+  }
+]

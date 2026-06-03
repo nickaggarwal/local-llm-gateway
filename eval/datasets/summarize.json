@@ -1,0 +1,22 @@
+[
+  {
+    "text": "The James Webb Space Telescope, launched in December 2021, is the largest space telescope ever built. It observes the universe primarily in the infrared spectrum, allowing it to see through cosmic dust and study some of the earliest galaxies formed after the Big Bang. Positioned about 1.5 million kilometers from Earth at the second Lagrange point, it is shielded from the Sun by a five-layer sunshield the size of a tennis court.",
+    "must_include": ["infrared", "2021", "Lagrange", "sunshield"],
+    "max_words": 60
+  },
+  {
+    "text": "Photosynthesis is the process by which green plants, algae, and some bacteria convert light energy into chemical energy. Using chlorophyll, they absorb sunlight to transform carbon dioxide and water into glucose and oxygen. This process occurs mainly in the chloroplasts of plant cells and is the foundation of most food chains on Earth, as well as the primary source of atmospheric oxygen.",
+    "must_include": ["chlorophyll", "carbon dioxide", "glucose", "oxygen"],
+    "max_words": 55
+  },
+  {
+    "text": "The 2008 financial crisis was triggered by the collapse of the United States housing bubble. Banks had issued large numbers of subprime mortgages to borrowers with poor credit, then bundled these loans into complex securities sold worldwide. When housing prices fell and defaults rose, these securities lost value, leading to the failure of major institutions like Lehman Brothers and a global recession that required massive government bailouts.",
+    "must_include": ["housing", "subprime", "Lehman Brothers", "recession"],
+    "max_words": 60
+  },
+  {
+    "text": "Mitochondria are membrane-bound organelles found in most eukaryotic cells. Often called the powerhouse of the cell, they generate most of the cell's supply of adenosine triphosphate, or ATP, which is used as a source of chemical energy. Mitochondria have their own small genome, separate from the cell nucleus, and are believed to have originated from ancient bacteria through a process called endosymbiosis.",
+    "must_include": ["ATP", "energy", "endosymbiosis", "genome"],
+    "max_words": 55
+  }
+]

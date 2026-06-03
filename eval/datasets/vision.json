@@ -1,0 +1,33 @@
+[
+  {
+    "image": "images/vision_shapes1.png",
+    "question": "How many red circles are in the image? Answer with just the number.",
+    "accept": [
+      "3",
+      "three"
+    ]
+  },
+  {
+    "image": "images/vision_shapes1.png",
+    "question": "How many blue squares are in the image? Answer with just the number.",
+    "accept": [
+      "2",
+      "two"
+    ]
+  },
+  {
+    "image": "images/vision_shapes2.png",
+    "question": "What color is the triangle? Answer with one word.",
+    "accept": [
+      "green"
+    ]
+  },
+  {
+    "image": "images/vision_shapes2.png",
+    "question": "How many purple circles are there? Answer with just the number.",
+    "accept": [
+      "2",
+      "two"
+    ]
+  }
+]
