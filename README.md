@@ -58,10 +58,71 @@ downloads automatically (progress shown in the UI). That's it.
 ## How it works
 
 1. You ask for a **task** (`ocr`, `chat`, `code`, `summarize`, `vision`, `embed`).
-2. The gateway looks up the best model for that task in [`registry.py`](registry.py),
-   sized to your machine's RAM (it has tiers; bigger RAM → bigger/better model).
+2. The gateway picks the best **backend** for your machine (see below) and the best
+   **model** for that task in [`registry.py`](registry.py), sized to your machine's
+   memory budget (it has tiers; bigger budget → bigger/better model).
 3. If the model isn't downloaded yet, it pulls it automatically.
 4. It runs the model and returns the result.
+
+## Backends (Ollama GPU, Qualcomm / Intel / AMD NPU)
+
+Inference runs through a pluggable backend ([`backends/`](backends/)). The gateway
+auto-selects, or you can force one with `--backend` (CLI), the **Backend** dropdown
+(UI), a `backend` field (API), or the `LLM_GATEWAY_BACKEND` env var. Available names:
+`auto`, `ollama`, `qualcomm`, `intel-npu`, `amd-npu`.
+
+- **`ollama`** (default, everywhere) — runs models via Ollama. What the gateway adds is
+  **GPU-aware model sizing**: Ollama/llama.cpp offloads model layers across GPU VRAM and
+  CPU RAM, so the gateway sizes the model tier off the **combined `RAM + VRAM` budget**.
+  A GPU therefore only ever lets you run a *bigger* model and accelerates the layers that
+  fit in VRAM — it never shrinks the model you'd have run on CPU alone. Layers beyond VRAM
+  are CPU-offloaded (slower, but they still run). Only **dedicated** VRAM is added to the
+  budget; integrated GPUs share system RAM, so counting them would double-count.
+
+  GPU acceleration itself is the runtime's job, not the gateway's — what differs per vendor
+  is which Ollama runtime you run:
+  - **NVIDIA** (CUDA) — used automatically by stock Ollama. Detected via NVML / `nvidia-smi`.
+  - **AMD Radeon** (ROCm) — used automatically by stock Ollama where ROCm is supported.
+    Detected via DRM sysfs (`/sys/class/drm`) or `rocm-smi`.
+  - **Intel Arc** (XMX / SYCL) — **not** in stock Ollama; run the
+    [IPEX-LLM Ollama build](https://github.com/intel-analytics/ipex-llm) and point
+    `OLLAMA_HOST` at it (same HTTP API, so this backend talks to it unchanged). Detected
+    via DRM sysfs.
+
+  > The acceleration above is via the **GPU** (CUDA / ROCm / SYCL-XMX). The *dedicated
+  > NPUs* on these platforms (AMD XDNA / "Ryzen AI", Intel Core Ultra NPU) are a separate
+  > path Ollama doesn't use — they have their own backends below.
+
+The remaining backends target **dedicated NPUs**. Each is hardware-gated: on a machine
+without that NPU it reports unavailable (with setup instructions) and the gateway falls
+back to Ollama. Only **`qualcomm`** is auto-selected when present — on Snapdragon there's
+no Ollama GPU path, so the NPU is the accelerator. **`intel-npu`** and **`amd-npu`** are
+**opt-in only** (`--backend …`): on x86 the Ollama GPU path is the better default, so we
+don't silently route to a weaker NPU.
+
+- **`qualcomm`** (Snapdragon, auto) — runs [Qualcomm AI Hub](https://aihub.qualcomm.com)
+  models pre-compiled for the **Hexagon NPU** (text LLMs via the Genie runtime; ONNX
+  graphs via ONNX Runtime's QNN execution provider). Detected via QNN SDK / `QNN_SDK_ROOT`,
+  ONNX Runtime's `QNNExecutionProvider`, or a Snapdragon Windows-on-ARM CPU. See
+  [Qualcomm NPU setup](#qualcomm-npu-setup).
+- **`intel-npu`** (Intel Core Ultra, opt-in) — runs text LLMs on the **Intel NPU** via
+  **OpenVINO** (`device="NPU"`) through optimum-intel, which handles tokenization and the
+  decode loop. Detected via OpenVINO's `NPU` device or the DRM accel subsystem. Needs models
+  exported to OpenVINO IR — see [Intel NPU setup](#intel-npu-setup).
+- **`amd-npu`** (AMD Ryzen AI, opt-in) — runs quantized ONNX LLMs on the **AMD XDNA NPU**
+  via ONNX Runtime's **VitisAI** execution provider. Detected via the VitisAI EP, Ryzen AI
+  env vars, or the DRM accel subsystem. Needs Ryzen-AI-quantized ONNX models — see
+  [AMD Ryzen AI setup](#amd-ryzen-ai-npu-setup).
+
+> **NPU scaffolds:** the Intel path is functional end-to-end on hardware (optimum-intel
+> drives generation). The Qualcomm ONNX path and the AMD path load/validate the NPU session
+> but stop short of the model-specific tokenizer + decode loop — that last step is wired on
+> the target device. Embeddings and vision tasks are not yet mapped on any NPU and fall back
+> to Ollama. All NPU backends require their vendor SDK + per-device model conversion, so they
+> can't run on a Mac/x86 host without an NPU.
+
+`python cli.py tasks` (and `GET /tasks`) print the detected hardware, the active backend,
+and the model each task would use.
 
 ### Model per task and laptop RAM
 
@@ -121,6 +182,8 @@ python cli.py run code "Reverse a linked list in Python."
 python cli.py run summarize "<long text...>"
 python cli.py run embed "hello world"
 python cli.py run ocr --image x.png --model qwen2.5vl:3b   # force a model
+python cli.py run chat "Hi" --backend qualcomm             # force a backend (Snapdragon NPU)
+python cli.py tasks --backend qualcomm                     # see NPU model per task
 ```
 
 First call for a new task downloads the model (progress shown), then runs it.
@@ -166,10 +229,70 @@ curl -s -X POST localhost:8000/run-image/ocr -F "file=@receipt.png"
 - **Linux**: `docker compose up` bundles Ollama; uncomment the GPU block in
   `docker-compose.yml` to use an NVIDIA GPU (needs nvidia-container-toolkit).
 
+## Qualcomm NPU setup
+
+The Qualcomm backend targets the **Hexagon NPU** on Snapdragon devices and needs three
+things present on that device (it can't run on a Mac/x86 host):
+
+1. **Qualcomm AI Engine Direct (QNN) SDK** with the **Genie** runtime — set
+   `QNN_SDK_ROOT` and put `genie-t2t-run` on `PATH`. For ONNX models also install
+   `onnxruntime-qnn`.
+2. **A compiled model artifact per task.** AI Hub models are compiled for a specific
+   device. Export the one you want with `qai-hub-models`, e.g.:
+   ```bash
+   pip install qai-hub-models
+   python -m qai_hub_models.models.llama_v3_2_3b_chat_quantized.export \
+     --device "Snapdragon X Elite CRD"
+   ```
+   Place the produced artifact + `genie_config.json` under
+   `~/.cache/qai-hub-gateway/<model>/` (override with `QAI_HUB_GATEWAY_CACHE`).
+3. Run it: `python cli.py run chat "Hi" --backend qualcomm`.
+
+The task→model map lives in [`backends/qualcomm.py`](backends/qualcomm.py)
+(`QUALCOMM_MODELS`); the slugs are `qai_hub_models` module names — confirm the exact
+name/device in the AI Hub catalog, as it evolves. `embed` is not yet wired on the NPU and
+stays on Ollama.
+
+## Intel NPU setup
+
+The `intel-npu` backend targets the **Intel Core Ultra NPU** via OpenVINO:
+
+1. Install the runtime: `pip install optimum[openvino]` (plus an OpenVINO build that
+   exposes the `NPU` device).
+2. Export the model to OpenVINO IR per task, e.g.:
+   ```bash
+   optimum-cli export openvino --model meta-llama/Llama-3.2-3B-Instruct \
+     --weight-format int4 "~/.cache/ov-npu-gateway/meta-llama__Llama-3.2-3B-Instruct"
+   ```
+   (cache dir overridable with `OV_NPU_GATEWAY_CACHE`).
+3. Run it: `python cli.py run chat "Hi" --backend intel-npu`.
+
+Generation runs end to end through optimum-intel (`OVModelForCausalLM`, `device="NPU"`).
+The task→model map lives in [`backends/intel_npu.py`](backends/intel_npu.py)
+(`INTEL_MODELS`).
+
+## AMD Ryzen AI (NPU) setup
+
+The `amd-npu` backend targets the **AMD XDNA NPU** via ONNX Runtime's VitisAI EP:
+
+1. Install the **Ryzen AI SW** stack (provides the VitisAI-enabled `onnxruntime`).
+2. Prepare a Ryzen-AI-quantized ONNX model per task — download a prebuilt `amd/*` ONNX
+   repo or quantize with `vai_q_onnx` — and place the `*.onnx` + VitisAI config under
+   `~/.cache/ryzen-ai-gateway/<model>/` (override with `RYZEN_AI_GATEWAY_CACHE`; point
+   `VAIP_CONFIG` at the config file).
+3. Run it: `python cli.py run chat "Hi" --backend amd-npu`.
+
+The scaffold loads/validates the VitisAI session; the per-model tokenizer + decode loop is
+wired on the device (Ryzen AI LLMs use a model-specific generation runner). The task→model
+map lives in [`backends/amd_npu.py`](backends/amd_npu.py) (`AMD_MODELS`) — confirm slugs per
+Ryzen AI release.
+
 ## Customizing
 
-- Add or change models per task in [`registry.py`](registry.py) — each task has RAM-sized tiers.
+- Switch backends per call with `--backend {auto,ollama,qualcomm}` (or `LLM_GATEWAY_BACKEND`).
+- Add or change models per task in [`registry.py`](registry.py) — each task has memory-sized tiers.
 - Add a whole new task type by adding an entry to `TASKS`.
+- Add a new backend by implementing the `Backend` interface in [`backends/base.py`](backends/base.py).
 
 ## Model selection — sources
 

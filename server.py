@@ -12,26 +12,34 @@ from fastapi import FastAPI, File, Form, HTTPException, UploadFile
 from pydantic import BaseModel
 
 import gateway
+import hardware
+from backends import get_backend
 from registry import TASKS, get_task
 
-app = FastAPI(title="Local LLM Gateway", description="Best model per task, run locally via Ollama.")
+app = FastAPI(title="Local LLM Gateway", description="Best model per task, run locally (Ollama / Qualcomm NPU).")
 
 
 class RunRequest(BaseModel):
     prompt: str
     model: str | None = None
+    backend: str | None = None
 
 
 @app.get("/tasks")
-def list_tasks() -> dict:
-    ram = gateway.available_ram_gb()
-    return {
-        "ram_gb": round(ram, 1),
-        "tasks": {
-            name: {"kind": t.kind, "model": t.pick_model(ram), "description": t.description}
-            for name, t in TASKS.items()
-        },
-    }
+def list_tasks(backend: str | None = None) -> dict:
+    hw = hardware.describe()
+    out = {}
+    for name, t in TASKS.items():
+        be = get_backend(backend, t)
+        try:
+            model = be.resolve_model(t, None, hw["budget_gb"])
+        except Exception as e:  # noqa: BLE001
+            model = None
+            out[name] = {"kind": t.kind, "backend": be.name, "model": None,
+                         "description": t.description, "error": str(e)}
+            continue
+        out[name] = {"kind": t.kind, "backend": be.name, "model": model, "description": t.description}
+    return {"hardware": hw, "tasks": out}
 
 
 @app.post("/run/{task}")
@@ -40,13 +48,14 @@ def run_text(task: str, req: RunRequest) -> dict:
     if t.kind == "vision":
         raise HTTPException(400, f"task '{task}' needs an image; use multipart upload at this endpoint")
     try:
-        return gateway.run(task, prompt=req.prompt, model=req.model)
+        return gateway.run(task, prompt=req.prompt, model=req.model, backend=req.backend)
     except Exception as e:  # noqa: BLE001
         raise HTTPException(500, str(e)) from e
 
 
 @app.post("/run-image/{task}")
-async def run_image(task: str, file: UploadFile = File(...), prompt: str = Form(None), model: str = Form(None)) -> dict:
+async def run_image(task: str, file: UploadFile = File(...), prompt: str = Form(None),
+                    model: str = Form(None), backend: str = Form(None)) -> dict:
     t = _get_task_or_404(task)
     if t.kind != "vision":
         raise HTTPException(400, f"task '{task}' is not a vision task; use POST /run/{task}")
@@ -63,7 +72,7 @@ async def run_image(task: str, file: UploadFile = File(...), prompt: str = Form(
     try:
         with os.fdopen(fd, "wb") as fh:
             fh.write(data)
-        return gateway.run(task, prompt=prompt, image_path=path, model=model)
+        return gateway.run(task, prompt=prompt, image_path=path, model=model, backend=backend)
     except Exception as e:  # noqa: BLE001
         raise HTTPException(500, str(e)) from e
     finally:

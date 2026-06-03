@@ -1,32 +1,77 @@
 [
   {
     "query": "How do I reset my account password?",
-    "relevant": "To change your password, go to Settings, click Security, and select Reset Password.",
-    "distractors": ["Our office is open Monday through Friday from 9am to 5pm.", "The annual subscription costs 99 dollars per year.", "You can upload profile photos in PNG or JPG format."]
+    "relevant": "To reset your password, open Settings, choose Security, and click Reset Password.",
+    "distractors": ["To change your username, open Settings and choose Profile.", "To enable two-factor authentication, open Settings and choose Security.", "To update your billing card, open Settings and choose Payments."]
   },
   {
-    "query": "What is the boiling point of water at sea level?",
-    "relevant": "At standard atmospheric pressure, water boils at 100 degrees Celsius.",
-    "distractors": ["Ice forms when temperatures drop below freezing.", "The Pacific is the largest ocean on Earth.", "Humidity measures the amount of water vapor in the air."]
+    "query": "Can I return an item I already opened?",
+    "relevant": "Opened items may be returned within 14 days for store credit.",
+    "distractors": ["Unopened items may be returned within 30 days for a full refund.", "Defective items are replaced free of charge within 90 days.", "Original shipping fees are non-refundable on all orders."]
   },
   {
-    "query": "How can I improve my running endurance?",
-    "relevant": "Gradually increasing your weekly mileage and adding long slow runs builds aerobic endurance over time.",
-    "distractors": ["A balanced diet includes proteins, fats, and carbohydrates.", "Stretching before bed can improve sleep quality.", "Weightlifting builds muscle strength and power."]
+    "query": "What temperature should I bake the chicken at?",
+    "relevant": "Roast the chicken at 425 degrees Fahrenheit for about 45 minutes.",
+    "distractors": ["Let the chicken rest for 10 minutes before carving.", "Marinate the chicken for at least two hours before cooking.", "Bake the bread at 350 degrees Fahrenheit for 30 minutes."]
   },
   {
-    "query": "What causes the seasons on Earth?",
-    "relevant": "Seasons are caused by the tilt of Earth's axis as it orbits the Sun, changing the angle of sunlight.",
-    "distractors": ["The Moon causes ocean tides through gravity.", "A solar eclipse occurs when the Moon blocks the Sun.", "Earth rotates once every 24 hours, creating day and night."]
+    "query": "How much memory does the base model laptop have?",
+    "relevant": "The base configuration ships with 8 GB of unified memory.",
+    "distractors": ["The base configuration includes 256 GB of SSD storage.", "The upgraded model offers 16 GB of unified memory.", "The display is a 13-inch Retina panel at 2560 by 1600."]
   },
   {
-    "query": "How do I make my Python code run faster?",
-    "relevant": "Profile your code to find bottlenecks, then optimize hot loops, use built-in functions, and consider vectorization with NumPy.",
-    "distractors": ["Python was created by Guido van Rossum in 1991.", "Indentation in Python defines code blocks.", "You can install packages using the pip command."]
+    "query": "When does the free trial end?",
+    "relevant": "Your free trial lasts 14 days and ends automatically unless you subscribe.",
+    "distractors": ["The annual plan is billed once every 12 months.", "Refunds are issued within 5 business days of cancellation.", "The free trial includes access to all premium features."]
   },
   {
-    "query": "What should I feed a new puppy?",
-    "relevant": "Young puppies need specially formulated puppy food several times a day to support healthy growth.",
-    "distractors": ["Cats are obligate carnivores and need taurine in their diet.", "Regular vet checkups keep pets healthy.", "Dogs are descended from wolves domesticated thousands of years ago."]
+    "query": "What's the maximum carry-on bag size?",
+    "relevant": "Carry-on bags must not exceed 22 x 14 x 9 inches including handles and wheels.",
+    "distractors": ["Checked bags must weigh under 50 pounds to avoid fees.", "Personal items must fit under the seat in front of you.", "Liquids in carry-ons must be in containers of 3.4 ounces or less."]
+  },
+  {
+    "query": "How do I cancel my subscription?",
+    "relevant": "To cancel, go to Account, select Subscription, and click Cancel Plan.",
+    "distractors": ["To upgrade your plan, go to Account and select Subscription.", "To change your email, go to Account and select Profile.", "To download an invoice, go to Account and select Billing History."]
+  },
+  {
+    "query": "What is the warranty period for the battery?",
+    "relevant": "The battery is covered by a separate 2-year limited warranty.",
+    "distractors": ["The device itself carries a 1-year limited warranty.", "Accidental damage protection can be purchased separately.", "The charger is covered for 6 months against defects."]
+  },
+  {
+    "query": "How often should I water a succulent?",
+    "relevant": "Water succulents only when the soil is fully dry, roughly every two weeks.",
+    "distractors": ["Succulents prefer bright, indirect sunlight near a window.", "Ferns like consistently moist soil and high humidity.", "Use a well-draining cactus mix when repotting succulents."]
+  },
+  {
+    "query": "What's the deadline to submit expense reports?",
+    "relevant": "Expense reports are due by the 5th business day of the following month.",
+    "distractors": ["Reimbursements are paid out on the 15th of each month.", "Receipts over 75 dollars must be attached to the report.", "Timesheets are due by the last business day of the month."]
+  },
+  {
+    "query": "Which port do I use for video output on this laptop?",
+    "relevant": "Use the HDMI 2.1 port on the right side for external video output.",
+    "distractors": ["The USB-C ports on the left support charging and data.", "The headphone jack is located on the right side.", "The microSD card reader is on the back edge."]
+  },
+  {
+    "query": "How do I enable dark mode in the app?",
+    "relevant": "Turn on dark mode under Settings, Appearance, by selecting the Dark theme.",
+    "distractors": ["Change the app language under Settings, General, Language.", "Adjust notification sounds under Settings, Notifications.", "Increase the font size under Settings, Accessibility."]
+  },
+  {
+    "query": "What's the recommended tire pressure for the front tires?",
+    "relevant": "The front tires should be inflated to 32 psi when cold.",
+    "distractors": ["The rear tires should be inflated to 35 psi when cold.", "Rotate the tires every 5,000 to 7,000 miles.", "Replace tires when tread depth falls below 2/32 of an inch."]
+  },
+  {
+    "query": "How long does standard shipping take?",
+    "relevant": "Standard shipping arrives within 5 to 7 business days.",
+    "distractors": ["Express shipping arrives within 1 to 2 business days.", "Free shipping applies to orders over 50 dollars.", "International orders may be subject to customs fees."]
+  },
+  {
+    "query": "What programming language is this library written in?",
+    "relevant": "The core library is implemented entirely in Rust for performance.",
+    "distractors": ["The library is distributed under the MIT license.", "Python bindings are available through a separate package.", "The documentation is generated with a static site builder."]
   }
 ]

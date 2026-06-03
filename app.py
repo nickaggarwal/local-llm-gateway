@@ -9,6 +9,8 @@ import tempfile
 import streamlit as st
 
 import gateway
+import hardware
+from backends import backend_names, get_backend
 from registry import TASKS
 
 st.set_page_config(page_title="Local LLM Gateway", page_icon="🧠", layout="centered")
@@ -16,9 +18,18 @@ st.set_page_config(page_title="Local LLM Gateway", page_icon="🧠", layout="cen
 st.title("🧠 Local LLM Gateway")
 st.caption("Pick a task — the best local model is chosen, downloaded if needed, and run on your laptop.")
 
-ram = gateway.available_ram_gb()
-st.sidebar.metric("Detected RAM", f"{ram:.0f} GB")
-st.sidebar.write("Models run locally via Ollama. Nothing leaves your machine.")
+hw = hardware.describe()
+st.sidebar.metric("Detected RAM", f"{hw['ram_gb']:.0f} GB")
+for g in hw["gpus"]:
+    label = f"{g['vendor'].upper()} GPU"
+    st.sidebar.metric(f"{label} VRAM", f"{g['vram_gb']:.0f} GB" if g["vram_gb"] else "shared")
+for vendor, present in hw["npus"].items():
+    if present:
+        st.sidebar.success(f"{vendor.capitalize()} NPU detected")
+st.sidebar.caption(f"Model sizing budget: {hw['budget_gb']:.0f} GB")
+
+backend_choice = st.sidebar.selectbox("Backend", options=["auto", *backend_names()])
+st.sidebar.write("Models run locally. Nothing leaves your machine.")
 
 task_name = st.selectbox(
     "Task",
@@ -26,8 +37,13 @@ task_name = st.selectbox(
     format_func=lambda n: f"{n} — {TASKS[n].description}",
 )
 task = TASKS[task_name]
-selected_model = task.pick_model(ram)
-st.info(f"**Kind:** {task.kind}  •  **Model:** `{selected_model}`")
+backend = get_backend(backend_choice, task)
+try:
+    selected_model = backend.resolve_model(task, None, hw["budget_gb"])
+    st.info(f"**Kind:** {task.kind}  •  **Backend:** `{backend.name}`  •  **Model:** `{selected_model}`")
+except Exception as e:  # noqa: BLE001
+    selected_model = ""
+    st.warning(f"`{backend.name}` can't serve **{task_name}**: {e}")
 
 override = st.sidebar.text_input("Force model (optional)", placeholder=selected_model)
 
@@ -50,9 +66,9 @@ def run_and_render(prompt: str, image_path: str | None) -> None:
         with status:
             result = gateway.run(
                 task_name, prompt=prompt, image_path=image_path,
-                model=(override or None), on_progress=on_progress,
+                model=(override or None), backend=backend_choice, on_progress=on_progress,
             )
-        status.update(label=f"Done · {result['model']}", state="complete", expanded=False)
+        status.update(label=f"Done · {result['backend']}/{result['model']}", state="complete", expanded=False)
         if "embedding" in result:
             emb = result["embedding"]
             answer = f"{len(emb)}-dimensional embedding\n\n```python\n{emb[:12]} ...\n```"

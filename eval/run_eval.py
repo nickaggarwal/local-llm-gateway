@@ -19,13 +19,17 @@ import sys
 import time
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-import gateway  # noqa: E402
+import gateway  # noqa: E402  (for OCR_PROMPT)
+from backends.ollama import OllamaBackend  # noqa: E402
 
 from candidates import LADDERS, TIERS, fits, runtime_gb  # noqa: E402
 from scorers import SCORERS, cosine  # noqa: E402
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 SUMMARIZE_PROMPT = "Summarize the following text in {n} words or fewer. Output only the summary.\n\n{text}"
+
+# The eval drives Ollama directly (the Qualcomm backend can't run on this host).
+BE = OllamaBackend()
 
 
 def load_dataset(task: str) -> list[dict]:
@@ -41,20 +45,19 @@ def run_example(task: str, kind: str, model: str, ex: dict) -> float:
     if kind == "vision":
         img = os.path.join(HERE, ex["image"])
         prompt = gateway.OCR_PROMPT if task == "ocr" else ex["question"]
-        out = gateway._generate(model, prompt, image_path=img)
+        out = BE.generate(model, prompt, image_path=img)
         return SCORERS[task](out, ex)
     if kind == "text":
         if task == "summarize":
             prompt = SUMMARIZE_PROMPT.format(n=ex.get("max_words", 60), text=ex["text"])
         else:
             prompt = ex["prompt"]
-        out = gateway._generate(model, prompt)
+        out = BE.generate(model, prompt)
         return SCORERS[task](out, ex)
     if kind == "embed":
-        q = gateway._embed(model, ex["query"])["embedding"]
-        rel = gateway._embed(model, ex["relevant"])["embedding"]
-        rel_sim = cosine(q, rel)
-        dist_sims = [cosine(q, gateway._embed(model, d)["embedding"]) for d in ex["distractors"]]
+        q = BE.embed(model, ex["query"])
+        rel_sim = cosine(q, BE.embed(model, ex["relevant"]))
+        dist_sims = [cosine(q, BE.embed(model, d)) for d in ex["distractors"]]
         return 1.0 if rel_sim > max(dist_sims) else 0.0
     raise ValueError(kind)
 
@@ -64,7 +67,7 @@ def eval_task(task: str, pull: bool, limit: int | None) -> None:
     dataset = load_dataset(task)
     if limit:
         dataset = dataset[:limit]
-    have = gateway.local_models()
+    have = BE._local_models()
 
     print(f"\n{'='*70}\nTASK: {task}  (kind={kind}, {len(dataset)} examples)\n{'='*70}")
     results = []
@@ -73,8 +76,8 @@ def eval_task(task: str, pull: bool, limit: int | None) -> None:
             if pull:
                 print(f"  pulling {cand.model} ...")
                 try:
-                    gateway.ensure_model(cand.model)
-                    have = gateway.local_models()
+                    BE.ensure_model(cand.model)
+                    have = BE._local_models()
                 except Exception as e:  # noqa: BLE001
                     print(f"  !! could not pull {cand.model}: {e} (skipping)")
                     continue

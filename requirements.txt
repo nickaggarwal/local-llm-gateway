@@ -5,3 +5,19 @@ python-multipart>=0.0.9
 psutil>=5.9
 pydantic>=2.0
 streamlit>=1.30
+
+# --- Optional, platform-specific (not installed by default) ---
+# GPU detection: NVIDIA uses NVML/`nvidia-smi`, AMD uses DRM sysfs or `rocm-smi`,
+# Intel uses DRM sysfs — all system tools, no pip packages required. For NVIDIA
+# detection without shelling out to nvidia-smi:
+#   pip install nvidia-ml-py        # provides `pynvml`
+# GPU *inference*: NVIDIA (CUDA) and AMD (ROCm) work in stock Ollama; Intel Arc
+# needs the IPEX-LLM Ollama build (set OLLAMA_HOST to point at it).
+# Qualcomm Hexagon NPU backend (Snapdragon devices only):
+#   pip install qai-hub-models      # AI Hub model export/compile
+#   pip install onnxruntime-qnn     # ONNX Runtime QNN execution provider
+# plus the Qualcomm AI Engine Direct (QNN) SDK + Genie runtime on PATH.
+# Intel NPU backend (Intel Core Ultra only):
+#   pip install optimum[openvino]   # OpenVINO + optimum-intel (device="NPU")
+# AMD XDNA / Ryzen AI NPU backend (Ryzen AI devices only):
+#   install the Ryzen AI SW stack   # provides onnxruntime with the VitisAI EP
