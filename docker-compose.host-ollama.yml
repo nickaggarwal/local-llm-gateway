@@ -1,0 +1,18 @@
+# Use this on macOS (and anywhere you'd rather run Ollama natively for GPU speed).
+# It runs ONLY the gateway container and points it at Ollama on the host.
+#
+#   1. Install + run Ollama on the host:  brew install --cask ollama && ollama serve
+#   2. docker compose -f docker-compose.host-ollama.yml up --build
+#
+services:
+  gateway:
+    build: .
+    container_name: gateway
+    ports:
+      - "8501:8501"
+      - "8000:8000"
+    environment:
+      - OLLAMA_HOST=http://host.docker.internal:11434
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    restart: unless-stopped
