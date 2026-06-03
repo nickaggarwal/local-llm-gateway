@@ -63,14 +63,28 @@ downloads automatically (progress shown in the UI). That's it.
 3. If the model isn't downloaded yet, it pulls it automatically.
 4. It runs the model and returns the result.
 
-| Task | Kind | Default model (≥12 GB RAM) |
-|------|------|----------------------------|
-| `ocr` | vision | qwen2.5vl:7b |
-| `vision` | vision | qwen2.5vl:7b |
-| `chat` | text | qwen2.5:7b |
-| `code` | text | qwen2.5-coder:7b |
-| `summarize` | text | qwen2.5:7b |
-| `embed` | embed | nomic-embed-text |
+### Model per task and laptop RAM
+
+The model is chosen from your machine's **total RAM** (leaving headroom for the OS),
+so a 16 GB laptop runs ~7B models, 24 GB runs ~14B, and 32–48 GB runs ~32B.
+
+| Task | 16 GB | 24 GB | 32 GB | 48 GB |
+|------|-------|-------|-------|-------|
+| `ocr` | qwen2.5vl:7b | qwen2.5vl:7b | qwen2.5vl:7b | qwen2.5vl:32b |
+| `vision` | qwen2.5vl:7b | qwen2.5vl:7b | qwen2.5vl:32b | qwen2.5vl:32b |
+| `chat` | qwen2.5:7b | qwen2.5:14b | qwen2.5:32b | qwen2.5:32b |
+| `code` | qwen2.5-coder:7b | qwen2.5-coder:14b | qwen2.5-coder:32b | qwen2.5-coder:32b |
+| `summarize` | qwen2.5:7b | qwen2.5:14b | qwen2.5:14b | qwen2.5:14b |
+| `embed` | mxbai-embed-large | mxbai-embed-large | mxbai-embed-large | mxbai-embed-large |
+
+Machines under 16 GB fall back to 3B models (and `nomic-embed-text` for embeddings).
+You can always override with `--model` (CLI) or the sidebar (UI).
+
+**Why these models (2026):** Qwen2.5-VL leads local VLMs on document/OCR benchmarks
+(DocVQA 95.7); Qwen2.5-Coder 32B matches GPT-4o on HumanEval (92.7%); Qwen2.5 is the
+strongest general open model at each size on consumer hardware; nomic-embed-text /
+mxbai-embed-large are the standard local embedding models for RAG. Sources are linked
+at the bottom of this file.
 
 ## Manual setup (without Docker)
 
@@ -142,3 +156,11 @@ curl -s -X POST localhost:8000/run-image/ocr -F "file=@receipt.png"
 
 - Add or change models per task in [`registry.py`](registry.py) — each task has RAM-sized tiers.
 - Add a whole new task type by adding an entry to `TASKS`.
+
+## Model selection — sources
+
+- [Best Ollama Models in 2026: A Practical Guide by Use Case](https://mljourney.com/best-ollama-models-in-2026-a-practical-guide-by-use-case/)
+- [Best Local Vision-Language Models for Offline AI (Roboflow)](https://blog.roboflow.com/local-vision-language-models/) — Qwen2.5-VL for OCR/documents
+- [Best Local Coding Models Ranked, Every VRAM Tier (InsiderLLM)](https://insiderllm.com/guides/best-local-coding-models-2026/) — Qwen2.5-Coder per VRAM tier
+- [Ollama VRAM Requirements: Complete 2026 Guide (LocalLLM.in)](https://localllm.in/blog/ollama-vram-requirements-for-local-llms)
+- [Ollama Embedding Models: Benchmarks, VRAM (Morph)](https://www.morphllm.com/ollama-embedding-models) — nomic-embed-text / mxbai-embed-large
