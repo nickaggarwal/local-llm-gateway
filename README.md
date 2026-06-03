@@ -4,28 +4,24 @@ Pick the **best local model for each task type**, download it automatically on f
 use, and run it — entirely on your laptop. No data leaves the machine. Powered by
 [Ollama](https://ollama.com).
 
-## One-command start (auto-detects everything)
+## One-command start (native, fast)
 
-The launcher detects your OS, chooses native vs Docker, starts Ollama, sets up the
-environment, and opens the UI.
+The launcher runs **natively** for full GPU speed: it starts host Ollama, sets up a
+local virtualenv, installs deps, and opens the UI. No flags, no Docker.
 
 **macOS / Linux / WSL / Git Bash:**
 
 ```bash
-./start.sh                # auto
-./start.sh --docker        # force Docker
-./start.sh --native        # force native (venv + host Ollama)
+./start.sh
 ```
 
 **Windows (PowerShell):**
 
 ```powershell
-.\start.ps1                 # auto
-.\start.ps1 -Mode docker
-.\start.ps1 -Mode native
+.\start.ps1
 ```
 
-Then open **http://localhost:8501**.
+Then open **http://localhost:8501**. (Prefer containers? See [Docker](#quick-start-docker--easiest) below.)
 
 ## Quick start (Docker — easiest)
 
