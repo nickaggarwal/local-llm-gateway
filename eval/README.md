@@ -43,6 +43,36 @@ python eval/run_eval.py --task all --limit 2  # quick smoke test
 Models not yet downloaded are skipped unless you pass `--pull`. The per-tier winner
 is computed only over models that actually fit that tier's RAM budget.
 
+## Results so far (OCR bake-off)
+
+Run on an Apple Silicon 48 GB machine, Ollama 0.30.2, 2 OCR images (composite of
+char-error-rate and key-token coverage; higher is better):
+
+| Model | Quant | Weights | OCR score | s/example |
+|-------|-------|--------:|----------:|----------:|
+| qwen2.5vl:3b | q8_0 | 3.5 GB | **0.976** | 11.3 |
+| qwen2.5vl:7b | q4_K_M | 6.0 GB | **0.976** | 13.8 |
+| qwen2.5vl:7b | q8_0 | 9.4 GB | 0.934 | 16.1 |
+| qwen2.5vl:7b | fp16 | 17 GB | 0.934 | 21.6 |
+| minicpm-v | q4 | 5.5 GB | 0.625 | 9.0 |
+| qwen2.5vl:32b | q4_K_M | 21 GB | — | fails to load CLIP projector on 0.30.2 |
+
+**Findings:**
+
+1. **Family matters most.** Qwen2.5-VL (~0.95) clearly beats MiniCPM-V (0.625) on
+   OCR — consistent with 2026 research.
+2. **Quantization barely matters for OCR.** q4 / q8 / fp16 of the same 7B model are
+   within noise of each other (and the higher-precision runs were actually a hair
+   lower here). So for the small-full-precision vs big-quantized question on OCR:
+   neither helps — **q4 is the right choice**, higher precision just costs RAM and speed.
+3. **Size is saturated.** 3B and 7B tie on this set, so the gateway tops OCR/vision
+   out at 7B; 32B adds cost with no measurable OCR gain (and won't load here).
+
+Caveat: only 2 OCR examples, so treat the small score differences as noise — the
+robust signals are (1) and the family gap. Add more examples to `datasets/ocr.json`
+to tighten the numbers. The `vision` shape-counting set is too easy (all VLMs score
+1.0) and needs harder questions to discriminate.
+
 ## Tuning the fit model
 
 `candidates.py` estimates runtime RAM as `weights·1.2 + overhead` (overhead 2.5 GB for

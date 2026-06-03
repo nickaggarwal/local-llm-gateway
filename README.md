@@ -70,8 +70,8 @@ so a 16 GB laptop runs ~7B models, 24 GB runs ~14B, and 32–48 GB runs ~32B.
 
 | Task | 16 GB | 24 GB | 32 GB | 48 GB |
 |------|-------|-------|-------|-------|
-| `ocr` | qwen2.5vl:7b | qwen2.5vl:7b | qwen2.5vl:7b | qwen2.5vl:32b |
-| `vision` | qwen2.5vl:7b | qwen2.5vl:7b | qwen2.5vl:32b | qwen2.5vl:32b |
+| `ocr` | qwen2.5vl:7b | qwen2.5vl:7b | qwen2.5vl:7b | qwen2.5vl:7b |
+| `vision` | qwen2.5vl:7b | qwen2.5vl:7b | qwen2.5vl:7b | qwen2.5vl:7b |
 | `chat` | qwen2.5:7b | qwen2.5:14b | qwen2.5:32b | qwen2.5:32b |
 | `code` | qwen2.5-coder:7b | qwen2.5-coder:14b | qwen2.5-coder:32b | qwen2.5-coder:32b |
 | `summarize` | qwen2.5:7b | qwen2.5:14b | qwen2.5:14b | qwen2.5:14b |
@@ -83,8 +83,10 @@ You can always override with `--model` (CLI) or the sidebar (UI).
 **Why these models (2026 research):**
 
 - **OCR / vision** — Qwen2.5-VL leads local VLMs on document benchmarks (DocVQA 95.7);
-  the top OCR finetune olmOCR-2 is built on Qwen2.5-VL-7B. Main cross-family alternative:
-  MiniCPM-V. (LLaVA / Granite-vision / Llama3.2-vision rate lower with more hallucination.)
+  the top OCR finetune olmOCR-2 is built on Qwen2.5-VL-7B. Our [bake-off](eval/README.md)
+  confirms it: Qwen2.5-VL scored ~0.95 vs MiniCPM-V at 0.625, and OCR accuracy was flat
+  across sizes (3B≈7B) and quants (q4≈q8≈fp16) — so OCR/vision top out at **7B q4**;
+  bigger/higher-precision bought nothing measurable (32B also fails to load on Ollama 0.30.2).
 - **code** — Qwen2.5-Coder is state-of-the-art open source (32B scores 92.7% HumanEval,
   beating GPT-4o); DeepSeek-Coder-V2 is a faster MoE alternative and Codestral is best at
   fill-in-the-middle completion.

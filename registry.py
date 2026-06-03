@@ -43,13 +43,19 @@ class Task:
 
 # Resolved model per laptop RAM tier (for reference; see README):
 #   TASK        16 GB                24 GB                32 GB                48 GB
-#   ocr         qwen2.5vl:7b         qwen2.5vl:7b         qwen2.5vl:7b         qwen2.5vl:32b
-#   vision      qwen2.5vl:7b         qwen2.5vl:7b         qwen2.5vl:32b        qwen2.5vl:32b
+#   ocr         qwen2.5vl:7b         qwen2.5vl:7b         qwen2.5vl:7b         qwen2.5vl:7b
+#   vision      qwen2.5vl:7b         qwen2.5vl:7b         qwen2.5vl:7b         qwen2.5vl:7b
 #   chat        qwen2.5:7b           qwen2.5:14b          qwen2.5:32b          qwen2.5:32b
 #   code        qwen2.5-coder:7b     qwen2.5-coder:14b    qwen2.5-coder:32b    qwen2.5-coder:32b
 #   summarize   qwen2.5:7b           qwen2.5:14b          qwen2.5:14b          qwen2.5:14b
 #   embed       bge-m3               bge-m3               bge-m3               bge-m3
 TASKS: dict[str, Task] = {
+    # OCR/vision top out at 7B by evidence: the bake-off (see eval/README.md)
+    # shows OCR accuracy is saturated across Qwen2.5-VL sizes/quants (3B q8 ~
+    # 7B q4 ~ 7B fp16), so bigger/higher-precision buys nothing measurable;
+    # 32B also fails to load its CLIP projector on current Ollama. Override
+    # with --model qwen2.5vl:32b for genuinely hard layouts if your runtime
+    # supports it.
     "ocr": Task(
         name="ocr",
         kind="vision",
@@ -57,7 +63,6 @@ TASKS: dict[str, Task] = {
         tiers=[
             ModelTier("qwen2.5vl:3b", 6),
             ModelTier("qwen2.5vl:7b", 16),
-            ModelTier("qwen2.5vl:32b", 48),
         ],
     ),
     "vision": Task(
@@ -67,7 +72,6 @@ TASKS: dict[str, Task] = {
         tiers=[
             ModelTier("qwen2.5vl:3b", 6),
             ModelTier("qwen2.5vl:7b", 16),
-            ModelTier("qwen2.5vl:32b", 32),
         ],
     ),
     "chat": Task(
