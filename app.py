@@ -51,6 +51,7 @@ override = st.sidebar.text_input("Force model (optional)", placeholder=selected_
 if st.session_state.get("active_task") != task_name:
     st.session_state["active_task"] = task_name
     st.session_state["history"] = []
+    st.session_state["agent_files"] = []
 if st.sidebar.button("Clear chat"):
     st.session_state["history"] = []
 
@@ -78,6 +79,10 @@ def run_and_render(prompt: str, image_path: str | None) -> None:
         status.update(label="Error", state="error")
         answer = f"⚠️ {e}"
 
+    if result.get("files"):
+        file_list = "\n".join(f"- `{os.path.basename(f)}`" for f in result["files"])
+        answer += f"\n\n**Created files:**\n{file_list}"
+        st.session_state.setdefault("agent_files", []).extend(result["files"])
     st.session_state["history"].append({"role": "assistant", "content": answer})
 
 
@@ -112,11 +117,12 @@ for msg in st.session_state["history"]:
         st.markdown(msg["content"])
 
 # --- Chat input: send extraction directions / prompts ---
-placeholder = (
-    "Tell me what to extract (e.g. 'just the total', 'the table as markdown')..."
-    if task.kind == "vision"
-    else "Type your message..."
-)
+if task.kind == "vision":
+    placeholder = "Tell me what to extract (e.g. 'just the total', 'the table as markdown')..."
+elif task.kind == "agent":
+    placeholder = "Describe what you want (e.g. 'Create an Excel file with a multiplication table')..."
+else:
+    placeholder = "Type your message..."
 user_msg = st.chat_input(placeholder)
 
 if user_msg:
@@ -129,6 +135,19 @@ if user_msg:
         with st.chat_message("assistant"):
             run_and_render(user_msg, image_path)
             st.markdown(st.session_state["history"][-1]["content"])
+
+# --- Agent file downloads ---
+if task.kind == "agent" and st.session_state.get("agent_files"):
+    with st.expander("Download created files", expanded=True):
+        for fpath in st.session_state["agent_files"]:
+            if os.path.exists(fpath):
+                with open(fpath, "rb") as f:
+                    st.download_button(
+                        f"Download {os.path.basename(fpath)}",
+                        f.read(),
+                        file_name=os.path.basename(fpath),
+                        key=fpath,
+                    )
 
 # Helpful starting hint for vision tasks.
 if task.kind == "vision" and not st.session_state["history"]:

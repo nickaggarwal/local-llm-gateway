@@ -8,7 +8,10 @@ Endpoints:
     POST /run/{task}  (multipart)    -> vision tasks (ocr, vision) with file upload
 """
 
+from pathlib import Path
+
 from fastapi import FastAPI, File, Form, HTTPException, UploadFile
+from fastapi.responses import FileResponse
 from pydantic import BaseModel
 
 import gateway
@@ -77,6 +80,18 @@ async def run_image(task: str, file: UploadFile = File(...), prompt: str = Form(
         raise HTTPException(500, str(e)) from e
     finally:
         os.unlink(path)
+
+
+@app.get("/files/{path:path}")
+def get_file(path: str):
+    """Download a file created by an agent run."""
+    from sandbox import WORKSPACE_ROOT
+    full = WORKSPACE_ROOT / path
+    if not full.resolve().is_relative_to(WORKSPACE_ROOT.resolve()):
+        raise HTTPException(403, "Access denied")
+    if not full.exists() or not full.is_file():
+        raise HTTPException(404, "File not found")
+    return FileResponse(full, filename=full.name)
 
 
 def _get_task_or_404(task: str):

@@ -74,6 +74,10 @@ def cmd_run(args) -> int:
         print(f"[{result['backend']}/{result['model']}] {len(emb)}-dim embedding: {emb[:5]}...")
     else:
         print(result["text"])
+    if result.get("files"):
+        print("\nCreated files:", file=sys.stderr)
+        for f in result["files"]:
+            print(f"  {f}", file=sys.stderr)
     return 0
 
 

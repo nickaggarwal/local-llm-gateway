@@ -29,7 +29,7 @@ class ModelTier:
 @dataclass(frozen=True)
 class Task:
     name: str
-    kind: str  # "text" | "vision" | "embed"
+    kind: str  # "text" | "vision" | "embed" | "agent"
     description: str
     tiers: list[ModelTier] = field(default_factory=list)
 
@@ -124,6 +124,17 @@ TASKS: dict[str, Task] = {
         tiers=[
             ModelTier("nomic-embed-text", 2),
             ModelTier("bge-m3", 8),
+        ],
+    ),
+    "agent": Task(
+        name="agent",
+        kind="agent",
+        description="Agentic assistant: plans and executes Python code in a Docker sandbox.",
+        tiers=[
+            ModelTier("qwen2.5-coder:3b", 6),
+            ModelTier("qwen2.5-coder:7b", 16),
+            ModelTier("qwen2.5-coder:14b", 24),
+            ModelTier("qwen2.5-coder:32b", 32),
         ],
     ),
 }

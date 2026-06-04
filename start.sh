@@ -87,6 +87,20 @@ echo "==> Installing dependencies..."
 python -m pip install -q --upgrade pip
 python -m pip install -q -r requirements.txt
 
+# Build the Docker sandbox image for the agent task (if Docker is available).
+echo "==> Checking Docker for agent sandbox..."
+if have docker && docker info >/dev/null 2>&1; then
+  if ! docker image inspect llm-gateway-sandbox >/dev/null 2>&1; then
+    echo "==> Building sandbox image (first run)..."
+    docker build -f Dockerfile.sandbox -t llm-gateway-sandbox .
+  else
+    echo "==> Sandbox image ready."
+  fi
+else
+  echo "==> Docker not available. Agent task will be unavailable."
+  echo "    Install Docker for agent/sandbox support: https://docs.docker.com/get-docker/"
+fi
+
 # Prepare NPU models if an NPU is present and its cache is empty (no-op otherwise).
 echo "==> Checking NPU model cache..."
 python convert.py --auto || echo "WARN: NPU model preparation skipped/failed; continuing with Ollama."

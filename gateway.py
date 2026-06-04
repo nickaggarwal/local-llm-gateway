@@ -58,6 +58,15 @@ def run(
         result["text"] = be.generate(chosen, prompt or OCR_PROMPT, image_path=image_path)
         return result
 
+    if task.kind == "agent":
+        if not prompt:
+            raise ValueError(f"task '{task_name}' requires a prompt")
+        from agent import run_agent_loop
+        agent_result = run_agent_loop(chosen, prompt, on_progress=on_progress)
+        result["text"] = agent_result["text"]
+        result["files"] = agent_result.get("files", [])
+        return result
+
     if not prompt:
         raise ValueError(f"task '{task_name}' requires a prompt")
     result["text"] = be.generate(chosen, prompt)
