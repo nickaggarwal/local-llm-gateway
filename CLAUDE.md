@@ -32,6 +32,15 @@ backends/
   amd_npu.py      ONNX Runtime VitisAI EP (Ryzen AI). AMD_MODELS map. Hardware-gated.
   convert.py      Per-backend NPU model preparation (download/compile artifacts).
 
+agent.py          Agentic tool-use loop (Ollama /api/chat + run_python/install_package).
+executors/        Pluggable sandboxes for agent code (Docker-free by default):
+  base.py         Executor ABC + shared workspace + new-file diffing.
+  docker_exec.py  Docker container per run (strongest isolation, if a daemon is present).
+  wasm.py         Pyodide (CPython→WASM) under Node; pyodide_driver.mjs is the Node host.
+  subprocess_exec.py  Hardened venv subprocess (always works; blast-radius isolation).
+sandbox.py        Back-compat shim re-exporting the moved Docker sandbox.
+Dockerfile.sandbox  Image for the Docker executor (optional; not required anymore).
+
 cli.py server.py app.py    The three front ends (all call gateway.run()).
 start.sh start.ps1         Native launchers (host Ollama + venv + UI; no flags, no Docker).
 
@@ -97,6 +106,7 @@ Six tasks, each with a `kind` that decides how input/output flow:
 | `code` | text | prompt | text | code generation |
 | `summary` | text | text | text | summarization |
 | `embed` | embed | text | float vector | retrieval / RAG |
+| `agent` | agent | prompt | text + files | tool-use loop; runs Python in a sandbox (see Executors) |
 
 A task's `kind` is the dispatch key in `gateway.run()` and in the eval — there is **no
 per-task-name special-casing in the gateway** (the summarize-style prompt wrapper lives
@@ -180,6 +190,37 @@ CLI (`tasks…`, `--all`, `--auto`, `--backend`, `--model`); the launcher runs
 GPU** (no NVIDIA/AMD for stock Ollama to use), they launch an IPEX-LLM Ollama build instead
 of stock Ollama (set `IPEX_LLM_OLLAMA=/path/to/ollama`) with the SYCL env exported.
 
+### Agent execution (`executors/`)
+
+The `agent` task (`agent.py`) is an Ollama `/api/chat` tool-use loop with two
+tools — `run_python` and `install_package` — executed in a sandbox. The sandbox
+is **pluggable and no longer requires Docker**; `get_executor("auto")` picks the
+strongest option that's actually usable:
+
+```
+docker  →  wasm  →  subprocess
+```
+
+- **`docker`** — one container per run, `--network none`, host-mounted workspace.
+  Strongest isolation + full CPython; used when a Docker daemon is present.
+- **`wasm`** — Pyodide (CPython→WASM) under Node, via `pyodide_driver.mjs`. The
+  workspace is the only host path it can see (NODEFS) and there's no runtime
+  network — strong, portable isolation with no daemon. The slim `pyodide` npm
+  package ships only the core, so **auto only picks WASM when the scientific
+  wheels are cached locally**; otherwise it's selectable explicitly for
+  pure-Python work (`--executor wasm`).
+- **`subprocess`** — a dedicated venv (pre-seeded with pandas/openpyxl/matplotlib),
+  run in the workspace cwd with a scrubbed env, POSIX resource limits, and a
+  timeout. **Blast-radius** isolation, not escape-proof — fits a *trusted* local
+  model, and it's the Docker-free default because it delivers the full toolkit
+  offline. Force any executor with `--executor` / `LLM_GATEWAY_EXECUTOR`.
+
+All executors share the `Executor` ABC in `executors/base.py` (workspace +
+new-file diffing live in the base; subclasses implement `_run_script`/`_install`)
+and return `{stdout, stderr, exit_code, files}`. Agent code must write outputs as
+**bare filenames** in the current directory (the workspace) — not absolute paths
+like `/workspace`, which only exist in the Docker executor.
+
 ## Eval / bake-off subsystem (`eval/`)
 
 Answers, per task and per RAM tier (16/24/32/48 GB): which downloaded model is most
@@ -215,6 +256,8 @@ faster. Quantization barely matters until a task is hard; OCR saturates at 7B, r
 | `OLLAMA_HOST` | ollama backend | Ollama API base (default `http://localhost:11434`) |
 | `OLLAMA_NUM_CTX` | ollama backend | Context window for generation (default 8192) |
 | `LLM_GATEWAY_BACKEND` | cli | Default backend when `--backend` is omitted |
+| `LLM_GATEWAY_EXECUTOR` | executors | Force agent sandbox (`docker`/`wasm`/`subprocess`); default `auto` |
+| `LLM_GATEWAY_WORKSPACE` | executors | Root dir for agent run workspaces (default `~/.local-llm-gateway/workspaces`) |
 | `IPEX_LLM_OLLAMA` | launchers | Path to IPEX-LLM Ollama for Intel-only-GPU machines |
 | `QNN_SDK_ROOT`, `QNN_BACKEND_PATH`, `QAI_HUB_DEVICE`, `QAI_HUB_GATEWAY_CACHE` | qualcomm | QNN SDK + AI Hub export/cache |
 | `OV_NPU_GATEWAY_CACHE` | intel_npu | OpenVINO compiled-model cache dir |

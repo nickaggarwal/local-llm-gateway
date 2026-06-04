@@ -85,7 +85,7 @@ async def run_image(task: str, file: UploadFile = File(...), prompt: str = Form(
 @app.get("/files/{path:path}")
 def get_file(path: str):
     """Download a file created by an agent run."""
-    from sandbox import WORKSPACE_ROOT
+    from executors import WORKSPACE_ROOT
     full = WORKSPACE_ROOT / path
     if not full.resolve().is_relative_to(WORKSPACE_ROOT.resolve()):
         raise HTTPException(403, "Access denied")

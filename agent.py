@@ -13,7 +13,7 @@ import os
 
 import requests
 
-from sandbox import Sandbox, docker_available, ensure_image
+from executors import get_executor
 
 OLLAMA_HOST = os.environ.get("OLLAMA_HOST", "http://localhost:11434").rstrip("/")
 NUM_CTX = int(os.environ.get("OLLAMA_NUM_CTX", "8192"))
@@ -25,9 +25,11 @@ TOOLS = [
         "function": {
             "name": "run_python",
             "description": (
-                "Execute Python code in a sandboxed Docker container. "
+                "Execute Python code in a sandboxed environment. "
                 "pandas, openpyxl, and matplotlib are pre-installed. "
-                "Save output files to /workspace/ — they will be returned to the user."
+                "Save output files to the current working directory using a bare "
+                "filename (e.g. 'report.xlsx', not an absolute path) — they will "
+                "be returned to the user."
             ),
             "parameters": {
                 "type": "object",
@@ -58,7 +60,9 @@ SYSTEM_PROMPT = (
     "You are a helpful assistant that can execute Python code to accomplish tasks.\n"
     "You have a sandboxed Python environment with pandas, openpyxl, and matplotlib.\n"
     "You can install additional packages with install_package.\n"
-    "Save any output files (Excel, CSV, images, etc.) to /workspace/.\n"
+    "Save any output files (Excel, CSV, images, etc.) to the current working "
+    "directory using a bare filename (e.g. 'data.csv') — never an absolute path "
+    "like /workspace.\n"
     "Think step by step, use tools to execute code, and when finished summarize "
     "what you did and list any files you created."
 )
@@ -110,22 +114,20 @@ def run_agent_loop(
     model: str,
     prompt: str,
     on_progress: object = None,
+    executor: str | None = None,
 ) -> dict:
-    """Drive the agent loop. Returns ``{"text": ..., "files": [host paths]}``."""
-    if not docker_available():
-        raise RuntimeError(
-            "Docker is not running. The agent task requires Docker for sandboxed code execution.\n"
-            "Install Docker: https://docs.docker.com/get-docker/"
-        )
-    ensure_image()
+    """Drive the agent loop. Returns ``{"text": ..., "files": [host paths]}``.
 
+    `executor` selects the sandbox ("auto"|"docker"|"wasm"|"subprocess"); auto
+    needs no Docker (falls back to WASM/Pyodide, then a hardened subprocess).
+    """
     messages: list[dict] = [
         {"role": "system", "content": SYSTEM_PROMPT},
         {"role": "user", "content": prompt},
     ]
     all_files: list[str] = []
 
-    with Sandbox() as sandbox:
+    with get_executor(executor) as sandbox:
         for turn in range(MAX_TURNS):
             if on_progress:
                 on_progress(f"Agent thinking (turn {turn + 1})...")
