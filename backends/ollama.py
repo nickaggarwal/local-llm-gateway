@@ -54,6 +54,8 @@ class OllamaBackend(Backend):
             ) from e
         if present:
             return
+        import sys
+        print(f"Downloading model {model} (first run, this may take a few minutes)...", file=sys.stderr)
         if on_progress:
             on_progress(f"downloading {model} (first use)...")
         with requests.post(

@@ -48,8 +48,22 @@ if intel_only_gpu; then
   fi
 fi
 
+install_ollama() {
+  echo "==> Ollama not found. Installing..."
+  if [[ "$(uname)" == "Darwin" ]] || [[ "$(uname)" == "Linux" ]]; then
+    curl -fsSL https://ollama.com/install.sh | sh
+  else
+    echo "ERROR: Auto-install not supported on this OS. Install manually: https://ollama.com/download"
+    exit 1
+  fi
+  # On macOS the installer may put the binary in a new PATH entry; rehash.
+  hash -r 2>/dev/null || true
+  have "$OLLAMA_BIN" || { echo "ERROR: Ollama installation failed. Install manually: https://ollama.com/download"; exit 1; }
+  echo "==> Ollama installed successfully."
+}
+
 ensure_ollama_host() {
-  have "$OLLAMA_BIN" || { echo "ERROR: Ollama not found ($OLLAMA_BIN). Install: https://ollama.com/download"; exit 1; }
+  have "$OLLAMA_BIN" || install_ollama
   if ollama_up; then echo "==> Ollama already running."; return; fi
   echo "==> Starting Ollama ($OLLAMA_BIN)..."
   "$OLLAMA_BIN" serve >"${TMPDIR:-/tmp}/ollama.log" 2>&1 &
