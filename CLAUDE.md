@@ -91,8 +91,16 @@ python eval/run_eval.py --task reasoning --pull   # download missing models firs
 python eval/run_eval.py --task all --limit 2 # quick smoke test
 ```
 
-There is no build step, linter config, or unit-test suite. "Tests" means the eval
-bake-off in `eval/`, which requires a running Ollama and downloads models.
+There is no build step or linter config. Two kinds of "tests" exist:
+
+```bash
+pip install -r requirements-dev.txt
+pytest                  # fast unit suite (no Ollama/Docker/Node/network)
+pytest -m integration   # real-service tests; each self-skips if its dep is absent
+```
+
+- **`tests/`** — pytest unit + integration suite (see Testing below).
+- **`eval/`** — the model bake-off, which needs a running Ollama and downloads models.
 
 ## Tasks
 
@@ -248,6 +256,28 @@ Qwen2.5-VL leads OCR (MiniCPM-V trails), Qwen2.5 dominates math reasoning (Llama
 weak), Llama 3.1 8B *beats* Qwen on summary, DeepSeek-Coder-V2 ties Qwen on code and is
 faster. Quantization barely matters until a task is hard; OCR saturates at 7B, reasoning at
 14B, code at 7B. These results drive the tiers in `registry.py`.
+
+## Testing (`tests/`)
+
+A pytest harness covering the codebase. The default run is **hermetic** — no
+Ollama, Docker, Node, or network — by mocking the Ollama HTTP API, faking the
+backend in gateway tests, and using `fastapi.testclient` for the server.
+
+- `test_registry.py` — tier selection + the per-task model matrix.
+- `test_eval_scorers.py` / `test_eval_candidates.py` — scoring math + RAM-fit.
+- `test_executors.py` — base run/file-diff (via a stub) + auto-selection order.
+- `test_backends.py` / `test_ollama_backend.py` — backend selection + payloads.
+- `test_gateway.py` — dispatch by task kind (backend faked).
+- `test_server.py` / `test_cli.py` — routing/validation + CLI wiring.
+- `test_agent.py` — tool-call parsing.
+- `test_hardware.py` — memory-budget math + `describe()` shape.
+- `test_integration.py` — `@pytest.mark.integration`, **deselected by default**
+  (`pytest.ini` `addopts = -m "not integration"`); each self-skips when its
+  dependency (Ollama / Node+Pyodide / venv build) is unavailable.
+
+Shared fixtures live in the repo-root `conftest.py` (`fake_ollama`,
+`isolated_workspace`), which also puts the repo root and `eval/` on `sys.path`.
+When adding a task/backend/executor, extend the matching test module.
 
 ## Environment variables
 
