@@ -37,7 +37,7 @@ def _progress(msg: str) -> None:
 
 def main() -> int:
     parser = argparse.ArgumentParser(description="Prepare NPU models (convert or download) before use.")
-    parser.add_argument("tasks", nargs="*", help="Task(s) to prepare (e.g. chat code ocr)")
+    parser.add_argument("tasks", nargs="*", help="Task(s) to prepare (e.g. reasoning code ocr)")
     parser.add_argument("--all", action="store_true", help="Prepare every task the backend supports")
     parser.add_argument(
         "--auto", action="store_true",

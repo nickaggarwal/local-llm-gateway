@@ -8,7 +8,7 @@ or a larger quantized model wins at each budget.
 Usage (from project root, with the venv active):
     python eval/run_eval.py --task ocr
     python eval/run_eval.py --task all
-    python eval/run_eval.py --task chat --pull        # download missing models
+    python eval/run_eval.py --task reasoning --pull   # download missing models
     python eval/run_eval.py --task all --limit 2      # quick smoke test
 """
 

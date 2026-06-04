@@ -4,7 +4,7 @@ Run: uvicorn server:app --port 8000
 
 Endpoints:
     GET  /tasks                      -> available tasks + selected model
-    POST /run/{task}  (JSON)         -> text tasks (chat, code, summarize, embed)
+    POST /run/{task}  (JSON)         -> text tasks (reasoning, code, summary, embed)
     POST /run/{task}  (multipart)    -> vision tasks (ocr, vision) with file upload
 """
 

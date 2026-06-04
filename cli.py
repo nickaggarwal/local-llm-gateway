@@ -3,7 +3,7 @@
 Examples:
     python cli.py tasks
     python cli.py run ocr --image receipt.png
-    python cli.py run chat "Explain RAG in one sentence."
+    python cli.py run reasoning "If a train travels 60 km in 45 min, what is its speed?"
     python cli.py run code "Write a Python function to reverse a linked list."
     python cli.py run embed "hello world"
 """
