@@ -75,8 +75,8 @@ function Install-Ollama {
 # Persist GPU-optimized Ollama env vars so the tray app and any future
 # Ollama start (manual, on-boot) always uses the right config.
 function Ensure-Ollama-Env {
-  $hasGpu = & $python -c "import hardware,sys; sys.exit(0 if hardware.has_gpu() else 1)" 2>$null; ($LASTEXITCODE -eq 0)
-  $kvType = if ($hasGpu) { "q8_0" } else { "q4_0" }
+  & $python -c "import hardware,sys; sys.exit(0 if hardware.has_gpu() else 1)" 2>$null
+  if ($LASTEXITCODE -eq 0) { $kvType = "q8_0" } else { $kvType = "q4_0" }
   $vars = @{
     OLLAMA_FLASH_ATTENTION = "1"
     OLLAMA_KV_CACHE_TYPE   = $kvType
@@ -88,7 +88,7 @@ function Ensure-Ollama-Env {
       [System.Environment]::SetEnvironmentVariable($k, $vars[$k], "User")
       Write-Host "    Set $k=$($vars[$k]) (persistent)"
     }
-    $env:$k = $vars[$k]
+    [System.Environment]::SetEnvironmentVariable($k, $vars[$k], "Process")
   }
   Write-Host "==> Ollama config: FLASH_ATTENTION=1  KV_CACHE=$kvType  GPU_OVERHEAD=0"
 }
