@@ -73,6 +73,7 @@ ensure_ollama_host() {
   export OLLAMA_FLASH_ATTENTION="${OLLAMA_FLASH_ATTENTION:-1}"
   export OLLAMA_KV_CACHE_TYPE="${OLLAMA_KV_CACHE_TYPE:-$kv_default}"
   export OLLAMA_GPU_OVERHEAD="${OLLAMA_GPU_OVERHEAD:-0}"
+  export OLLAMA_CONTEXT_LENGTH="${OLLAMA_CONTEXT_LENGTH:-2048}"
   echo "==> Starting Ollama ($OLLAMA_BIN)..."
   echo "    FLASH_ATTENTION=$OLLAMA_FLASH_ATTENTION  KV_CACHE=$OLLAMA_KV_CACHE_TYPE"
   "$OLLAMA_BIN" serve >"${TMPDIR:-/tmp}/ollama.log" 2>&1 &
@@ -114,16 +115,22 @@ fi
 echo "==> Checking NPU model cache..."
 python convert.py --auto || echo "WARN: NPU model preparation skipped/failed; continuing with Ollama."
 
-# Pre-warm the default model on GPU so the first request is instant.
+# Pre-warm the default model on GPU so the first request is instant,
+# then verify weights are actually in VRAM.
 echo "==> Pre-loading model on GPU..."
 python -c "
 from backends.ollama import OllamaBackend
-import registry, hardware
+import registry, hardware, requests
 b = OllamaBackend()
 m = registry.TASKS['reasoning'].pick_model(hardware.memory_budget_gb())
 b.ensure_model(m)
 b.warm_model(m)
-print(f'  {m} loaded')
+ps = requests.get(b.host + '/api/ps', timeout=5).json().get('models', [])
+for loaded in ps:
+    vram = loaded['size_vram'] / 1e9
+    pct  = loaded['size_vram'] / loaded['size'] * 100 if loaded['size'] else 0
+    loc  = 'GPU' if pct > 50 else 'CPU (low VRAM)'
+    print(f'  {loaded[\"name\"]}: {vram:.1f} GB VRAM ({pct:.0f}% on {loc})')
 " || echo "WARN: Model pre-load failed; first request will be slower."
 
 echo "==> Launching UI at $UI_URL  (Ctrl+C to stop)"

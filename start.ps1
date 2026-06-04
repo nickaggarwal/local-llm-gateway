@@ -78,9 +78,10 @@ function Ensure-Ollama-Env {
   & $python -c "import hardware,sys; sys.exit(0 if hardware.has_gpu() else 1)" 2>$null
   if ($LASTEXITCODE -eq 0) { $kvType = "q8_0" } else { $kvType = "q4_0" }
   $vars = @{
-    OLLAMA_FLASH_ATTENTION = "1"
-    OLLAMA_KV_CACHE_TYPE   = $kvType
-    OLLAMA_GPU_OVERHEAD    = "0"
+    OLLAMA_FLASH_ATTENTION  = "1"
+    OLLAMA_KV_CACHE_TYPE    = $kvType
+    OLLAMA_GPU_OVERHEAD     = "0"
+    OLLAMA_CONTEXT_LENGTH   = "2048"
   }
   foreach ($k in $vars.Keys) {
     $current = [System.Environment]::GetEnvironmentVariable($k, "User")
@@ -123,9 +124,23 @@ python -m pip install -q -r requirements.txt
 Write-Host "==> Checking NPU model cache..."
 python convert.py --auto
 if ($LASTEXITCODE -ne 0) { Write-Host "WARN: NPU model preparation skipped/failed; continuing with Ollama." }
-# Pre-warm the default model on GPU so the first request is instant.
+# Pre-warm the default model on GPU so the first request is instant,
+# then verify weights are actually in VRAM.
 Write-Host "==> Pre-loading model on GPU..."
-python -c "from backends.ollama import OllamaBackend; import registry, hardware; b=OllamaBackend(); m=registry.TASKS['reasoning'].pick_model(hardware.memory_budget_gb()); b.ensure_model(m); b.warm_model(m); print(f'  {m} loaded')"
+python -c "
+from backends.ollama import OllamaBackend
+import registry, hardware, requests
+b = OllamaBackend()
+m = registry.TASKS['reasoning'].pick_model(hardware.memory_budget_gb())
+b.ensure_model(m)
+b.warm_model(m)
+ps = requests.get(b.host + '/api/ps', timeout=5).json().get('models', [])
+for loaded in ps:
+    vram = loaded['size_vram'] / 1e9
+    pct  = loaded['size_vram'] / loaded['size'] * 100 if loaded['size'] else 0
+    loc  = 'GPU' if pct > 50 else 'CPU (low VRAM)'
+    print(f'  {loaded[\"name\"]}: {vram:.1f} GB VRAM ({pct:.0f}% on {loc})')
+"
 if ($LASTEXITCODE -ne 0) { Write-Host "WARN: Model pre-load failed; first request will be slower." }
 Write-Host "==> Launching UI at $UiUrl  (Ctrl+C to stop)"
 streamlit run app.py --server.address 0.0.0.0 --server.port 8501 --server.headless true

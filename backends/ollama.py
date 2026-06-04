@@ -26,7 +26,7 @@ class OllamaBackend(Backend):
     # Ollama's built-in default context is only ~2048 tokens, which truncates
     # long inputs (big OCR pages, long passages to summarize, multi-turn chat).
     # Default to an 8K window for the common case; override with OLLAMA_NUM_CTX.
-    DEFAULT_NUM_CTX = int(os.environ.get("OLLAMA_NUM_CTX", "4096"))
+    DEFAULT_NUM_CTX = int(os.environ.get("OLLAMA_NUM_CTX", "2048"))
     # When a dedicated GPU is present, tell Ollama to offload all layers.
     # Without this, Ollama's system-RAM-only check can reject models that
     # fit comfortably once GPU VRAM is used for offload.
