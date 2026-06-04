@@ -142,8 +142,11 @@ with an actionable message that the front ends surface verbatim.
 - **`ollama.py`** — the default; talks to the Ollama HTTP API at `OLLAMA_HOST`
   (default `localhost:11434`). NVIDIA (CUDA) and AMD (ROCm) acceleration are automatic in
   stock Ollama; Intel Arc/Xe goes through an IPEX-LLM Ollama build (same API/port). Sets a
-  default context window (`DEFAULT_NUM_CTX`, env `OLLAMA_NUM_CTX`, default 8192) on every
-  `generate` so long inputs aren't truncated by Ollama's ~2048 default.
+  default context window (`DEFAULT_NUM_CTX`, env `OLLAMA_NUM_CTX`, default 4096) on every
+  `generate` so long inputs aren't truncated by Ollama's ~2048 default. When a dedicated
+  GPU is detected, passes `num_gpu: 999` to offload all layers to VRAM. The launchers
+  also set `OLLAMA_FLASH_ATTENTION=1` and `OLLAMA_KV_CACHE_TYPE` (q8_0 with GPU, q4_0
+  CPU-only) to keep the KV cache small enough for 8 GB VRAM cards.
 - **`qualcomm.py`** (Hexagon NPU), **`intel_npu.py`** (OpenVINO `device="NPU"`),
   **`amd_npu.py`** (ONNX Runtime VitisAI EP) — each has its own per-task model map
   (`QUALCOMM_MODELS` / `INTEL_MODELS` / `AMD_MODELS`) and its own cache dir env var. These

@@ -14,6 +14,7 @@ from pathlib import Path
 
 import requests
 
+import hardware
 from registry import Task
 
 from .base import Backend, BackendUnavailable, OnProgress
@@ -25,7 +26,11 @@ class OllamaBackend(Backend):
     # Ollama's built-in default context is only ~2048 tokens, which truncates
     # long inputs (big OCR pages, long passages to summarize, multi-turn chat).
     # Default to an 8K window for the common case; override with OLLAMA_NUM_CTX.
-    DEFAULT_NUM_CTX = int(os.environ.get("OLLAMA_NUM_CTX", "8192"))
+    DEFAULT_NUM_CTX = int(os.environ.get("OLLAMA_NUM_CTX", "4096"))
+    # When a dedicated GPU is present, tell Ollama to offload all layers.
+    # Without this, Ollama's system-RAM-only check can reject models that
+    # fit comfortably once GPU VRAM is used for offload.
+    HAS_DEDICATED_GPU = hardware.has_gpu()
 
     def __init__(self, host: str | None = None) -> None:
         self.host = (host or os.environ.get("OLLAMA_HOST", "http://localhost:11434")).rstrip("/")
@@ -90,7 +95,11 @@ class OllamaBackend(Backend):
             "model": model,
             "prompt": prompt,
             "stream": False,
-            "options": {"temperature": 0, "num_ctx": self.DEFAULT_NUM_CTX},
+            "options": {
+                "temperature": 0,
+                "num_ctx": self.DEFAULT_NUM_CTX,
+                **({"num_gpu": 999} if self.HAS_DEDICATED_GPU else {}),
+            },
         }
         if image_path:
             b64 = base64.b64encode(Path(image_path).read_bytes()).decode("utf-8")
