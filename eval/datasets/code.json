@@ -1,27 +1,62 @@
 [
   {
-    "prompt": "Write a Python function `reverse_string(s)` that returns the string s reversed. Output only the function in a python code block.",
-    "entrypoint": "reverse_string",
-    "tests": ["assert reverse_string('abc') == 'cba'", "assert reverse_string('') == ''", "assert reverse_string('a') == 'a'"]
+    "prompt": "Write a Python function `coin_change(coins, amount)` returning the fewest coins that make up `amount`, or -1 if impossible. Output only the function in a python code block.",
+    "entrypoint": "coin_change",
+    "tests": ["assert coin_change([1,2,5],11)==3", "assert coin_change([2],3)==-1", "assert coin_change([1],0)==0", "assert coin_change([1,2,5],100)==20"]
   },
   {
-    "prompt": "Write a Python function `is_prime(n)` that returns True if n is a prime number and False otherwise. Output only the function in a python code block.",
-    "entrypoint": "is_prime",
-    "tests": ["assert is_prime(2) == True", "assert is_prime(15) == False", "assert is_prime(17) == True", "assert is_prime(1) == False"]
+    "prompt": "Write a Python function `lcs(a, b)` returning the length of the longest common subsequence of strings a and b. Output only the function in a python code block.",
+    "entrypoint": "lcs",
+    "tests": ["assert lcs('abcde','ace')==3", "assert lcs('abc','abc')==3", "assert lcs('abc','def')==0", "assert lcs('','x')==0"]
   },
   {
-    "prompt": "Write a Python function `fizzbuzz(n)` that returns 'Fizz' if n is divisible by 3, 'Buzz' if divisible by 5, 'FizzBuzz' if divisible by both, otherwise the number as a string. Output only the function in a python code block.",
-    "entrypoint": "fizzbuzz",
-    "tests": ["assert fizzbuzz(3) == 'Fizz'", "assert fizzbuzz(5) == 'Buzz'", "assert fizzbuzz(15) == 'FizzBuzz'", "assert fizzbuzz(7) == '7'"]
+    "prompt": "Write a Python function `is_valid(s)` returning True if the string of brackets (), [], {} is correctly matched and nested, else False. Output only the function in a python code block.",
+    "entrypoint": "is_valid",
+    "tests": ["assert is_valid('()[]{}')==True", "assert is_valid('(]')==False", "assert is_valid('([)]')==False", "assert is_valid('{[]}')==True", "assert is_valid('')==True"]
   },
   {
-    "prompt": "Write a Python function `count_vowels(s)` that returns the number of vowels (a, e, i, o, u, case-insensitive) in the string s. Output only the function in a python code block.",
-    "entrypoint": "count_vowels",
-    "tests": ["assert count_vowels('hello') == 2", "assert count_vowels('XYZ') == 0", "assert count_vowels('AEIou') == 5"]
+    "prompt": "Write a Python function `max_subarray_sum(nums)` returning the maximum sum of any contiguous non-empty subarray. Output only the function in a python code block.",
+    "entrypoint": "max_subarray_sum",
+    "tests": ["assert max_subarray_sum([-2,1,-3,4,-1,2,1,-5,4])==6", "assert max_subarray_sum([1])==1", "assert max_subarray_sum([-1,-2,-3])==-1"]
   },
   {
-    "prompt": "Write a Python function `merge_sorted(a, b)` that merges two already-sorted lists into one sorted list. Output only the function in a python code block.",
-    "entrypoint": "merge_sorted",
-    "tests": ["assert merge_sorted([1,3,5],[2,4,6]) == [1,2,3,4,5,6]", "assert merge_sorted([],[1]) == [1]", "assert merge_sorted([1,2],[]) == [1,2]"]
+    "prompt": "Write a Python function `word_break(s, words)` returning True if s can be segmented into a space-separated sequence of one or more words from the list `words`. Output only the function in a python code block.",
+    "entrypoint": "word_break",
+    "tests": ["assert word_break('leetcode',['leet','code'])==True", "assert word_break('applepenapple',['apple','pen'])==True", "assert word_break('catsandog',['cats','dog','sand','and','cat'])==False"]
+  },
+  {
+    "prompt": "Write a Python function `two_sum(nums, target)` returning the indices of the two numbers that add to target, as a list in increasing order. Exactly one solution exists. Output only the function in a python code block.",
+    "entrypoint": "two_sum",
+    "tests": ["assert sorted(two_sum([2,7,11,15],9))==[0,1]", "assert sorted(two_sum([3,2,4],6))==[1,2]", "assert sorted(two_sum([3,3],6))==[0,1]"]
+  },
+  {
+    "prompt": "Write a Python function `edit_distance(a, b)` returning the Levenshtein edit distance between strings a and b. Output only the function in a python code block.",
+    "entrypoint": "edit_distance",
+    "tests": ["assert edit_distance('horse','ros')==3", "assert edit_distance('intention','execution')==5", "assert edit_distance('','abc')==3", "assert edit_distance('abc','abc')==0"]
+  },
+  {
+    "prompt": "Write a Python function `merge_intervals(intervals)` that merges all overlapping intervals and returns them sorted by start. Output only the function in a python code block.",
+    "entrypoint": "merge_intervals",
+    "tests": ["assert [list(x) for x in merge_intervals([[1,3],[2,6],[8,10],[15,18]])]==[[1,6],[8,10],[15,18]]", "assert [list(x) for x in merge_intervals([[1,4],[4,5]])]==[[1,5]]", "assert [list(x) for x in merge_intervals([[1,4]])]==[[1,4]]"]
+  },
+  {
+    "prompt": "Write a Python function `rotate90(matrix)` returning the matrix rotated 90 degrees clockwise (as a new list of lists). Output only the function in a python code block.",
+    "entrypoint": "rotate90",
+    "tests": ["assert rotate90([[1,2],[3,4]])==[[3,1],[4,2]]", "assert rotate90([[1,2,3],[4,5,6],[7,8,9]])==[[7,4,1],[8,5,2],[9,6,3]]"]
+  },
+  {
+    "prompt": "Write a Python function `longest_palindrome_len(s)` returning the length of the longest palindromic substring of s. Output only the function in a python code block.",
+    "entrypoint": "longest_palindrome_len",
+    "tests": ["assert longest_palindrome_len('babad')==3", "assert longest_palindrome_len('cbbd')==2", "assert longest_palindrome_len('a')==1", "assert longest_palindrome_len('abcda')==1"]
+  },
+  {
+    "prompt": "Write a Python function `trap(height)` that, given a list of non-negative bar heights of width 1, returns how much rain water it can trap. Output only the function in a python code block.",
+    "entrypoint": "trap",
+    "tests": ["assert trap([0,1,0,2,1,0,1,3,2,1,2,1])==6", "assert trap([4,2,0,3,2,5])==9", "assert trap([])==0"]
+  },
+  {
+    "prompt": "Write a Python function `kth_largest(nums, k)` returning the kth largest element in the list. Output only the function in a python code block.",
+    "entrypoint": "kth_largest",
+    "tests": ["assert kth_largest([3,2,1,5,6,4],2)==5", "assert kth_largest([3,2,3,1,2,4,5,5,6],4)==4", "assert kth_largest([1],1)==1"]
   }
 ]

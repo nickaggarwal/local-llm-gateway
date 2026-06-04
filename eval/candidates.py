@@ -53,23 +53,23 @@ LADDERS: dict[str, tuple[str, list[Cand]]] = {
         Cand("minicpm-v", 5.5),            # alt family
         Cand("llama3.2-vision:11b", 7.8),  # alt family
     ]),
-    "chat": ("text", [
+    "reasoning": ("text", [
         Cand("qwen2.5:3b", 2.0),
         Cand("qwen2.5:7b", 4.7),           # q4_K_M
         Cand("qwen2.5:7b-fp16", 15.0),
         Cand("qwen2.5:14b", 9.0),          # q4_K_M
         Cand("qwen2.5:32b", 20.0),         # q4_K_M
-        Cand("llama3.1:8b", 4.9),          # alt family: best all-round balance
+        Cand("llama3.1:8b", 4.9),          # alt family
         Cand("gemma2:9b", 5.4),            # alt family
         Cand("mistral:7b", 4.1),           # alt family: fastest at 7B
         Cand("phi4:14b", 9.1),             # alt family: STEM/reasoning
     ]),
-    "summarize": ("text", [
+    "summary": ("text", [
         Cand("qwen2.5:3b", 2.0),
         Cand("qwen2.5:7b", 4.7),
         Cand("qwen2.5:14b", 9.0),
         Cand("qwen2.5:32b", 20.0),
-        Cand("llama3.1:8b", 4.9),          # alt family
+        Cand("llama3.1:8b", 4.9),          # alt family: leads summary at ~8B
         Cand("gemma2:9b", 5.4),            # alt family
     ]),
     "code": ("text", [

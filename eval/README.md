@@ -24,9 +24,9 @@ eval/
 |------|---------|--------|
 | `ocr` | 6 generated images (invoice, paragraph, code, table, receipt, address) | 0.5·(1−char-error-rate) + 0.5·key-token coverage |
 | `vision` | 15 real images from **VQAv2** (public) + short answers | answer word-boundary-matches an accepted human answer |
-| `chat` | factual questions with canonical answers | answer contains the canonical value |
+| `reasoning` | math / multi-step word problems with exact answers | answer word-boundary-matches the expected value |
 | `code` | function specs + assert tests | functional correctness (asserts pass) |
-| `summarize` | passages with required key facts + length cap | key-fact coverage − length penalty |
+| `summary` | passages with required key facts + length cap | key-fact coverage − length penalty |
 | `embed` | query + 1 relevant doc + 3 distractors | relevant doc ranks #1 by cosine similarity |
 
 ## Running
@@ -68,10 +68,29 @@ is computed only over models that actually fit that tier's RAM budget.
 | qwen2.5vl:7b | q8_0 | 0.800 | 3.9 |
 | qwen2.5vl:7b | fp16 | 0.800 | 4.4 |
 
+**Text tasks** (reasoning 18 Q, code 12 problems, summary 4 passages, embed 15 retrievals):
+
+| Model | reasoning | code | summary |
+|-------|----------:|-----:|--------:|
+| qwen2.5:3b / coder:3b | 0.556 | 0.917 | 0.750 |
+| qwen2.5:7b / coder:7b | 0.722 | 1.000 | 0.750 |
+| qwen2.5:14b / coder:14b | **1.000** | 1.000 | 0.875 |
+| qwen2.5:32b / coder:32b | 0.944 | 1.000 | **1.000** |
+| llama3.1:8b | 0.444 | — | 0.875 |
+| deepseek-coder-v2:16b | — | 1.000 | — |
+
+embed: nomic **1.000** · bge-m3 0.933 · mxbai 0.867.
+
 **Findings:**
 
 1. **Best model depends on the sub-task.** Qwen2.5-VL wins OCR (~0.98 vs MiniCPM-V's
    0.77); MiniCPM-V edges general VQA (0.867 vs 0.800) and is ~2.5× faster. Pick per use case.
+2. **Family strength flips by task.** On math **reasoning**, Qwen2.5 dominates and Llama
+   3.1 8B is weak (0.44); on **summary**, Llama 3.1 8B (0.875) *beats* Qwen2.5 7B (0.75).
+   On **code**, DeepSeek-Coder-V2 matches Qwen and is faster. This is why the registry
+   picks a different family per task.
+3. **Reasoning saturates at 14B** (32B no gain), **code at 7B**, so the registry caps
+   there rather than always reaching for the biggest model.
 2. **Quantization barely matters.** Across OCR and vision, q4 / q8 / fp16 of the same
    model score within noise (higher precision was if anything a hair lower). So for the
    small-full-precision vs big-quantized question: **q4 is the right choice** — higher

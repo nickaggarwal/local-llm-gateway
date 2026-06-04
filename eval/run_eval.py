@@ -48,7 +48,7 @@ def run_example(task: str, kind: str, model: str, ex: dict) -> float:
         out = BE.generate(model, prompt, image_path=img)
         return SCORERS[task](out, ex)
     if kind == "text":
-        if task == "summarize":
+        if task == "summary":
             prompt = SUMMARIZE_PROMPT.format(n=ex.get("max_words", 60), text=ex["text"])
         else:
             prompt = ex["prompt"]

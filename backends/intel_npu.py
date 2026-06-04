@@ -37,8 +37,8 @@ class OvModel:
 # Text tasks share one small instruct model (as the Qualcomm backend does).
 # ocr/vision/embed are not wired on the NPU yet and fall back to Ollama.
 INTEL_MODELS: dict[str, OvModel] = {
-    "chat": OvModel("meta-llama/Llama-3.2-3B-Instruct"),
-    "summarize": OvModel("meta-llama/Llama-3.2-3B-Instruct"),
+    "reasoning": OvModel("meta-llama/Llama-3.2-3B-Instruct"),
+    "summary": OvModel("meta-llama/Llama-3.2-3B-Instruct"),
     "code": OvModel("Qwen/Qwen2.5-Coder-3B-Instruct"),
 }
 

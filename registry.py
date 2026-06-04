@@ -13,7 +13,7 @@ at 24 GB, and a 32B at 32–48 GB. Thresholds are set at 6 / 16 / 24 / 32 / 48.
 
 Model choices reflect 2026 benchmarks: Qwen2.5-VL for OCR/vision (best DocVQA
 among local VLMs), Qwen2.5-Coder for code (matches GPT-4o on HumanEval at 32B),
-Qwen2.5 for chat/summarize, and nomic-embed-text / mxbai-embed-large for
+Qwen2.5 for reasoning, Llama 3.1 / Qwen2.5 for summary, and bge-m3 / nomic for
 embeddings. See README "Model selection" for sources.
 """
 
@@ -45,9 +45,9 @@ class Task:
 #   TASK        16 GB                24 GB                32 GB                48 GB
 #   ocr         qwen2.5vl:7b         qwen2.5vl:7b         qwen2.5vl:7b         qwen2.5vl:7b
 #   vision      qwen2.5vl:7b         qwen2.5vl:7b         qwen2.5vl:7b         qwen2.5vl:7b
-#   chat        qwen2.5:7b           qwen2.5:14b          qwen2.5:32b          qwen2.5:32b
+#   reasoning   qwen2.5:7b           qwen2.5:14b          qwen2.5:14b          qwen2.5:14b
 #   code        qwen2.5-coder:7b     qwen2.5-coder:14b    qwen2.5-coder:32b    qwen2.5-coder:32b
-#   summarize   qwen2.5:7b           qwen2.5:14b          qwen2.5:14b          qwen2.5:14b
+#   summary     llama3.1:8b          llama3.1:8b          qwen2.5:32b          qwen2.5:32b
 #   embed       bge-m3               bge-m3               bge-m3               bge-m3
 TASKS: dict[str, Task] = {
     # OCR/vision top out at 7B by evidence: the bake-off (see eval/README.md)
@@ -74,15 +74,18 @@ TASKS: dict[str, Task] = {
             ModelTier("qwen2.5vl:7b", 16),
         ],
     ),
-    "chat": Task(
-        name="chat",
+    # reasoning: math/multi-step word problems. Bake-off (eval/) shows Qwen2.5
+    # scales 7b 0.72 -> 14b 1.0 and far outperforms Llama 3.1 8B (0.44) on math.
+    # 14b already tops out (32b scored 0.94, no gain), so we cap at 14b; override
+    # to qwen2.5:32b for harder problems.
+    "reasoning": Task(
+        name="reasoning",
         kind="text",
-        description="General conversation and Q&A.",
+        description="Multi-step reasoning, math, and logic problems.",
         tiers=[
-            ModelTier("llama3.2:3b", 6),
+            ModelTier("qwen2.5:3b", 6),
             ModelTier("qwen2.5:7b", 16),
             ModelTier("qwen2.5:14b", 24),
-            ModelTier("qwen2.5:32b", 32),
         ],
     ),
     "code": Task(
@@ -96,14 +99,18 @@ TASKS: dict[str, Task] = {
             ModelTier("qwen2.5-coder:32b", 32),
         ],
     ),
-    "summarize": Task(
-        name="summarize",
+    # summary: opposite of reasoning — the bake-off shows Llama 3.1 8B (0.875)
+    # beats Qwen2.5 7B (0.75) and ties Qwen2.5 14B on key-fact coverage while
+    # being smaller/faster, so it's the pick up to 24 GB; only Qwen2.5 32B (1.0)
+    # justifies the jump at 32 GB+.
+    "summary": Task(
+        name="summary",
         kind="text",
         description="Summarize long text into key points.",
         tiers=[
-            ModelTier("llama3.2:3b", 6),
-            ModelTier("qwen2.5:7b", 16),
-            ModelTier("qwen2.5:14b", 24),
+            ModelTier("qwen2.5:3b", 6),
+            ModelTier("llama3.1:8b", 16),
+            ModelTier("qwen2.5:32b", 32),
         ],
     ),
     "embed": Task(

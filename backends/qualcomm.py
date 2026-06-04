@@ -46,8 +46,8 @@ class QnnModel:
 # Task -> NPU-optimized model. Slugs come from the AI Hub catalog; verify the
 # exact name/device target before exporting, as the catalog evolves.
 QUALCOMM_MODELS: dict[str, QnnModel] = {
-    "chat": QnnModel("llama_v3_2_3b_chat_quantized", "genie"),
-    "summarize": QnnModel("llama_v3_2_3b_chat_quantized", "genie"),
+    "reasoning": QnnModel("llama_v3_2_3b_chat_quantized", "genie"),
+    "summary": QnnModel("llama_v3_2_3b_chat_quantized", "genie"),
     "code": QnnModel("llama_v3_2_3b_chat_quantized", "genie"),
     "ocr": QnnModel("trocr", "onnx-qnn"),
     "vision": QnnModel("openai_clip", "onnx-qnn"),

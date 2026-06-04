@@ -1,0 +1,20 @@
+[
+  {"prompt": "A train travels 60 km in 45 minutes. What is its average speed in km/h? Answer with just the number.", "accept": ["80"]},
+  {"prompt": "If 3 painters can paint 3 fences in 3 hours, how many fences can 6 painters paint in 6 hours? Answer with just the number.", "accept": ["12"]},
+  {"prompt": "A shirt costs $40 after a 20% discount. What was the original price in dollars? Answer with just the number.", "accept": ["50"]},
+  {"prompt": "I have 5 apples, give away 2, then buy 4 more and eat 1. How many apples do I have now? Answer with just the number.", "accept": ["6"]},
+  {"prompt": "What is 15% of 240? Answer with just the number.", "accept": ["36"]},
+  {"prompt": "If today is Wednesday, what day of the week will it be in 10 days? Answer with the day name.", "accept": ["saturday"]},
+  {"prompt": "How many minutes are there in 3.5 hours? Answer with just the number.", "accept": ["210"]},
+  {"prompt": "A book has 300 pages. Reading 25 pages per day, how many days to finish it? Answer with just the number.", "accept": ["12"]},
+  {"prompt": "Sarah is twice as old as Tom. Tom is 9. How old will Sarah be in 5 years? Answer with just the number.", "accept": ["23"]},
+  {"prompt": "What is the next number in the sequence 2, 6, 12, 20, 30, ...? Answer with just the number.", "accept": ["42"]},
+  {"prompt": "A car uses 6 liters of fuel per 100 km. How many liters does a 250 km trip need? Answer with just the number.", "accept": ["15"]},
+  {"prompt": "Three people each shake hands with each other exactly once. How many handshakes occur in total? Answer with just the number.", "accept": ["3"]},
+  {"prompt": "A clock shows 3:15. What is the smaller angle between the hour and minute hands, in degrees? Answer with just the number.", "accept": ["7.5"]},
+  {"prompt": "If all Bloops are Razzies and all Razzies are Lazzies, are all Bloops definitely Lazzies? Answer yes or no.", "accept": ["yes"]},
+  {"prompt": "A bat and a ball cost $1.10 together. The bat costs $1.00 more than the ball. How much does the ball cost in cents? Answer with just the number.", "accept": ["5"]},
+  {"prompt": "How many times does the digit 1 appear when writing all numbers from 1 to 20 inclusive? Answer with just the number.", "accept": ["12"]},
+  {"prompt": "Two trains 120 km apart travel toward each other at 40 km/h and 20 km/h. After how many hours do they meet? Answer with just the number.", "accept": ["2"]},
+  {"prompt": "What is the area of a triangle with base 10 and height 6? Answer with just the number.", "accept": ["30"]}
+]

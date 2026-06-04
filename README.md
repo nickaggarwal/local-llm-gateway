@@ -54,7 +54,7 @@ downloads automatically (progress shown in the UI). That's it.
 
 ## How it works
 
-1. You ask for a **task** (`ocr`, `chat`, `code`, `summarize`, `vision`, `embed`).
+1. You ask for a **task** (`ocr`, `reasoning`, `code`, `summary`, `vision`, `embed`).
 2. The gateway picks the best **backend** for your machine (see below) and the best
    **model** for that task in [`registry.py`](registry.py), sized to your machine's
    memory budget (it has tiers; bigger budget → bigger/better model).
@@ -132,9 +132,9 @@ so a 16 GB laptop runs ~7B models, 24 GB runs ~14B, and 32–48 GB runs ~32B.
 |------|-------|-------|-------|-------|
 | `ocr` | qwen2.5vl:7b | qwen2.5vl:7b | qwen2.5vl:7b | qwen2.5vl:7b |
 | `vision` | qwen2.5vl:7b | qwen2.5vl:7b | qwen2.5vl:7b | qwen2.5vl:7b |
-| `chat` | qwen2.5:7b | qwen2.5:14b | qwen2.5:32b | qwen2.5:32b |
+| `reasoning` | qwen2.5:7b | qwen2.5:14b | qwen2.5:14b | qwen2.5:14b |
 | `code` | qwen2.5-coder:7b | qwen2.5-coder:14b | qwen2.5-coder:32b | qwen2.5-coder:32b |
-| `summarize` | qwen2.5:7b | qwen2.5:14b | qwen2.5:14b | qwen2.5:14b |
+| `summary` | llama3.1:8b | llama3.1:8b | qwen2.5:32b | qwen2.5:32b |
 | `embed` | bge-m3 | bge-m3 | bge-m3 | bge-m3 |
 
 Machines under 16 GB fall back to 3B models (and `nomic-embed-text` for embeddings).
@@ -150,8 +150,13 @@ You can always override with `--model` (CLI) or the sidebar (UI).
 - **code** — Qwen2.5-Coder is state-of-the-art open source (32B scores 92.7% HumanEval,
   beating GPT-4o); DeepSeek-Coder-V2 is a faster MoE alternative and Codestral is best at
   fill-in-the-middle completion.
-- **chat / summarize** — Qwen2.5 is strongest per-size on consumer hardware; Phi-4 14B is
-  notably strong on STEM/reasoning, with Llama 3.1, Gemma 2, and Mistral as alternatives.
+- **reasoning** — Qwen2.5 scales clearly with size on math/multi-step problems in our
+  [bake-off](eval/README.md) (7B 0.72 → 14B 1.00) and far outperforms Llama 3.1 8B (0.44).
+  14B already tops out (32B showed no gain), so we cap there; override to 32B for harder
+  problems. Phi-4 14B is another strong STEM option.
+- **summary** — the opposite: the bake-off shows Llama 3.1 8B (0.875) beats Qwen2.5 7B
+  (0.75) and ties Qwen2.5 14B on key-fact coverage while being smaller/faster, so it's the
+  pick up to 24 GB; only Qwen2.5 32B (1.0) justifies the jump at 32 GB+.
 - **embed** — switched the default to **bge-m3** (8192-token context, multilingual):
   mxbai-embed-large scores higher on English retrieval but **silently truncates at 512
   tokens**, which corrupts embeddings of long text. nomic-embed-text is the lightweight
@@ -176,12 +181,12 @@ pip install -r requirements.txt
 ```bash
 python cli.py tasks                       # show tasks + which model each will use
 python cli.py run ocr --image receipt.png
-python cli.py run chat "Explain RAG in one sentence."
+python cli.py run reasoning "If a train travels 60 km in 45 min, what is its speed?"
 python cli.py run code "Reverse a linked list in Python."
-python cli.py run summarize "<long text...>"
+python cli.py run summary "<long text...>"
 python cli.py run embed "hello world"
 python cli.py run ocr --image x.png --model qwen2.5vl:3b   # force a model
-python cli.py run chat "Hi" --backend qualcomm             # force a backend (Snapdragon NPU)
+python cli.py run reasoning "Hi" --backend qualcomm        # force a backend (Snapdragon NPU)
 python cli.py tasks --backend qualcomm                     # see NPU model per task
 ```
 
@@ -196,7 +201,7 @@ streamlit run app.py
 Opens at http://localhost:8501. Pick a task from the dropdown. For `ocr`/`vision`,
 upload an image then use the **chat box** to send extraction directions — e.g.
 "just the total", "the table as markdown", "the invoice number" — and iterate across
-turns. For `chat`/`code`/`summarize` the chat box drives the conversation; `embed`
+turns. For `reasoning`/`code`/`summary` the chat box drives the conversation; `embed`
 uses a one-shot input. The chosen model and download progress show inline, and a
 **Clear chat** button in the sidebar resets the conversation.
 
@@ -210,7 +215,7 @@ uvicorn server:app --port 8000
 curl -s localhost:8000/tasks | jq
 
 # text tasks
-curl -s -X POST localhost:8000/run/chat \
+curl -s -X POST localhost:8000/run/reasoning \
   -H 'content-type: application/json' \
   -d '{"prompt":"Explain RAG in one sentence."}'
 
@@ -240,7 +245,7 @@ You can also prepare ahead of time with the [`convert.py`](convert.py) script (i
 auto-detects the NPU, or pass `--backend`):
 
 ```bash
-python convert.py chat                  # prepare 'chat' for the detected NPU
+python convert.py reasoning             # prepare 'reasoning' for the detected NPU
 python convert.py --all                 # prepare every task the backend supports
 python convert.py ocr --backend qualcomm
 ```
@@ -262,7 +267,7 @@ Mac/x86 host):
    `QAI_HUB_DEVICE` (default `"Snapdragon X Elite CRD"`). Needs `pip install qai-hub-models`
    and an AI Hub API token. Artifacts cache under `~/.cache/qai-hub-gateway/<model>/`
    (override `QAI_HUB_GATEWAY_CACHE`).
-3. Run it: `python cli.py run chat "Hi" --backend qualcomm`.
+3. Run it: `python cli.py run reasoning "Hi" --backend qualcomm`.
 
 The task→model map lives in [`backends/qualcomm.py`](backends/qualcomm.py)
 (`QUALCOMM_MODELS`); the slugs are `qai_hub_models` module names — confirm the exact
@@ -279,7 +284,7 @@ The `intel-npu` backend targets the **Intel Core Ultra NPU** via OpenVINO:
    <task> --backend intel-npu`): the converter runs `optimum-cli export openvino
    --weight-format int4`, or downloads a ready-made IR if an `OvModel.precompiled` repo is
    mapped. IR caches under `~/.cache/ov-npu-gateway/<model>/` (override `OV_NPU_GATEWAY_CACHE`).
-3. Run it: `python cli.py run chat "Hi" --backend intel-npu`.
+3. Run it: `python cli.py run reasoning "Hi" --backend intel-npu`.
 
 Generation runs end to end through optimum-intel (`OVModelForCausalLM`, `device="NPU"`).
 The task→model map lives in [`backends/intel_npu.py`](backends/intel_npu.py)
@@ -295,7 +300,7 @@ The `amd-npu` backend targets the **AMD XDNA NPU** via ONNX Runtime's VitisAI EP
    mapped for the task. (For a model you quantize yourself with `vai_q_onnx`, drop the
    `*.onnx` in the cache dir instead.) Caches under `~/.cache/ryzen-ai-gateway/<model>/`
    (override `RYZEN_AI_GATEWAY_CACHE`; point `VAIP_CONFIG` at the config file).
-3. Run it: `python cli.py run chat "Hi" --backend amd-npu`.
+3. Run it: `python cli.py run reasoning "Hi" --backend amd-npu`.
 
 The scaffold loads/validates the VitisAI session; the per-model tokenizer + decode loop is
 wired on the device (Ryzen AI LLMs use a model-specific generation runner). The task→model

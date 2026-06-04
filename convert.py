@@ -7,8 +7,8 @@ automatically on first use via each backend's `ensure_model`; this script just
 lets you do it up front.
 
 Examples:
-    python convert.py chat                  # prepare 'chat' for the detected NPU
-    python convert.py chat code             # prepare several tasks
+    python convert.py reasoning             # prepare 'reasoning' for the detected NPU
+    python convert.py reasoning code        # prepare several tasks
     python convert.py --all                 # prepare every task the backend supports
     python convert.py ocr --backend qualcomm
 """

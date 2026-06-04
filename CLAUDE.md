@@ -4,8 +4,8 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## What this is
 
-A local LLM gateway: pick the best local model per **task** (`ocr`, `chat`, `code`,
-`summarize`, `vision`, `embed`), download/prepare it on first use, and run it entirely on
+A local LLM gateway: pick the best local model per **task** (`ocr`, `reasoning`, `code`,
+`summary`, `vision`, `embed`), download/prepare it on first use, and run it entirely on
 the user's machine. Three surfaces share one core: a CLI (`cli.py`), a FastAPI server
 (`server.py`), and a Streamlit UI (`app.py`).
 
@@ -19,9 +19,9 @@ the user's machine. Three surfaces share one core: a CLI (`cli.py`), a FastAPI s
 # CLI
 python cli.py tasks                       # list tasks + detected hardware + chosen model/backend
 python cli.py tasks --backend qualcomm    # what a specific backend would pick
-python cli.py run chat "..."              # run a text task
+python cli.py run reasoning "..."         # run a text task
 python cli.py run ocr --image x.png       # vision task
-python cli.py run chat "..." --backend intel-npu --model <id>   # force backend/model
+python cli.py run reasoning "..." --backend intel-npu --model <id>   # force backend/model
 
 # HTTP API
 uvicorn server:app --port 8000
@@ -30,13 +30,13 @@ uvicorn server:app --port 8000
 streamlit run app.py
 
 # Prepare NPU models ahead of first use (also auto-runs from the launcher)
-python convert.py chat                 # detected NPU
+python convert.py reasoning            # detected NPU
 python convert.py --all --backend amd-npu
 
 # Eval / bake-off (drives Ollama directly)
 python eval/run_eval.py --task all
 python eval/run_eval.py --task ocr           # single task
-python eval/run_eval.py --task chat --pull   # download missing models first
+python eval/run_eval.py --task reasoning --pull   # download missing models first
 python eval/run_eval.py --task all --limit 2 # quick smoke test
 ```
 

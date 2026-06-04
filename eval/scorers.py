@@ -50,11 +50,11 @@ def score_vision(output: str, ex: dict) -> float:
     return _accept_match(output, ex["accept"])
 
 
-def score_chat(output: str, ex: dict) -> float:
+def score_reasoning(output: str, ex: dict) -> float:
     return _accept_match(output, ex["accept"])
 
 
-def score_summarize(output: str, ex: dict) -> float:
+def score_summary(output: str, ex: dict) -> float:
     """Key-point coverage with a soft length penalty."""
     o = _norm(output).lower()
     pts = ex["must_include"]
@@ -99,7 +99,7 @@ def cosine(a: list[float], b: list[float]) -> float:
 SCORERS = {
     "ocr": score_ocr,
     "vision": score_vision,
-    "chat": score_chat,
-    "summarize": score_summarize,
+    "reasoning": score_reasoning,
+    "summary": score_summary,
     "code": score_code,
 }

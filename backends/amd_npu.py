@@ -36,8 +36,8 @@ class XdnaModel:
 
 # Text tasks share one small instruct model. ocr/vision/embed fall back to Ollama.
 AMD_MODELS: dict[str, XdnaModel] = {
-    "chat": XdnaModel("amd/Llama-3.2-3B-Instruct-onnx-ryzenai"),
-    "summarize": XdnaModel("amd/Llama-3.2-3B-Instruct-onnx-ryzenai"),
+    "reasoning": XdnaModel("amd/Llama-3.2-3B-Instruct-onnx-ryzenai"),
+    "summary": XdnaModel("amd/Llama-3.2-3B-Instruct-onnx-ryzenai"),
     "code": XdnaModel("amd/Llama-3.2-3B-Instruct-onnx-ryzenai"),
 }
 
