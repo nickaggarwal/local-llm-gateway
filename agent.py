@@ -64,6 +64,48 @@ SYSTEM_PROMPT = (
 )
 
 
+TOOL_NAMES = {t["function"]["name"] for t in TOOLS}
+
+
+def _parse_content_tool_calls(content: str) -> list[dict] | None:
+    """Some models return tool calls as JSON text in content instead of using
+    the ``tool_calls`` field.  Try to extract them."""
+    text = content.strip()
+    # Strip markdown code fences if present.
+    if text.startswith("```"):
+        lines = text.splitlines()
+        lines = [l for l in lines if not l.strip().startswith("```")]
+        text = "\n".join(lines).strip()
+    try:
+        obj = json.loads(text)
+    except (json.JSONDecodeError, TypeError):
+        return None
+    # Single tool call as {"name": ..., "arguments": ...}
+    if isinstance(obj, dict) and obj.get("name") in TOOL_NAMES:
+        return [{"function": {"name": obj["name"], "arguments": obj.get("arguments", {})}}]
+    # List of tool calls
+    if isinstance(obj, list) and all(isinstance(o, dict) and o.get("name") in TOOL_NAMES for o in obj):
+        return [{"function": {"name": o["name"], "arguments": o.get("arguments", {})}} for o in obj]
+    return None
+
+
+def _execute_tool(sandbox, fn_name: str, fn_args: dict, on_progress) -> tuple[dict, list[str]]:
+    """Execute a single tool call, return (result_dict, new_files)."""
+    new_files: list[str] = []
+    if fn_name == "run_python":
+        result = sandbox.run_code(fn_args.get("code", ""))
+        new_files = result.pop("files", [])
+        if new_files:
+            result["created_files"] = new_files
+    elif fn_name == "install_package":
+        result = sandbox.install_package(fn_args.get("package", ""))
+    else:
+        result = {"error": f"Unknown tool: {fn_name}"}
+    if on_progress:
+        on_progress(f"  tool {fn_name} -> exit {result.get('exit_code', '?')}")
+    return result, new_files
+
+
 def run_agent_loop(
     model: str,
     prompt: str,
@@ -103,12 +145,19 @@ def run_agent_loop(
             msg = resp.json()["message"]
             messages.append(msg)
 
+            # Ollama may return tool calls in the tool_calls field (standard)
+            # or as JSON text in the content field (some models do this).
             tool_calls = msg.get("tool_calls")
             if not tool_calls:
-                return {
-                    "text": msg.get("content", ""),
-                    "files": [str(sandbox.workspace / f) for f in all_files],
-                }
+                content = msg.get("content", "")
+                parsed = _parse_content_tool_calls(content)
+                if parsed:
+                    tool_calls = parsed
+                else:
+                    return {
+                        "text": content,
+                        "files": [str(sandbox.workspace / f) for f in all_files],
+                    }
 
             for tc in tool_calls:
                 fn_name = tc["function"]["name"]
@@ -119,19 +168,8 @@ def run_agent_loop(
                     except (json.JSONDecodeError, TypeError):
                         fn_args = {}
 
-                if fn_name == "run_python":
-                    result = sandbox.run_code(fn_args.get("code", ""))
-                    new_files = result.pop("files", [])
-                    all_files.extend(new_files)
-                    if new_files:
-                        result["created_files"] = new_files
-                elif fn_name == "install_package":
-                    result = sandbox.install_package(fn_args.get("package", ""))
-                else:
-                    result = {"error": f"Unknown tool: {fn_name}"}
-
-                if on_progress:
-                    on_progress(f"  tool {fn_name} -> exit {result.get('exit_code', '?')}")
+                result, new_files = _execute_tool(sandbox, fn_name, fn_args, on_progress)
+                all_files.extend(new_files)
 
                 messages.append({
                     "role": "tool",

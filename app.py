@@ -54,6 +54,7 @@ if st.session_state.get("active_task") != task_name:
     st.session_state["agent_files"] = []
 if st.sidebar.button("Clear chat"):
     st.session_state["history"] = []
+    st.session_state["agent_files"] = []
 
 
 def run_and_render(prompt: str, image_path: str | None) -> None:
@@ -63,6 +64,7 @@ def run_and_render(prompt: str, image_path: str | None) -> None:
     def on_progress(msg: str) -> None:
         status.write(msg if len(msg) < 200 else msg[:200])
 
+    result = {}
     try:
         with status:
             result = gateway.run(
