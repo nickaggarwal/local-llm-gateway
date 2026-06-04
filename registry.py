@@ -126,18 +126,26 @@ TASKS: dict[str, Task] = {
             ModelTier("bge-m3", 8),
         ],
     ),
-    "agent": Task(
-        name="agent",
-        kind="agent",
-        description="Agentic assistant: plans and executes Python code in a Docker sandbox.",
-        tiers=[
-            ModelTier("qwen2.5-coder:3b", 6),
-            ModelTier("qwen2.5-coder:7b", 16),
-            ModelTier("qwen2.5-coder:14b", 24),
-            ModelTier("qwen2.5-coder:32b", 32),
-        ],
-    ),
 }
+
+_AGENT_TASK = Task(
+    name="agent",
+    kind="agent",
+    description="Agentic assistant: plans and executes Python code in a Docker sandbox.",
+    tiers=[
+        ModelTier("qwen2.5-coder:3b", 6),
+        ModelTier("qwen2.5-coder:7b", 16),
+        ModelTier("qwen2.5-coder:14b", 24),
+        ModelTier("qwen2.5-coder:32b", 32),
+    ],
+)
+
+try:
+    from sandbox import docker_available
+    if docker_available():
+        TASKS["agent"] = _AGENT_TASK
+except Exception:
+    pass
 
 
 def get_task(name: str) -> Task:

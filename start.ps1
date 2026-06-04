@@ -72,18 +72,40 @@ function Install-Ollama {
   Write-Host "==> Ollama installed successfully."
 }
 
+# Persist GPU-optimized Ollama env vars so the tray app and any future
+# Ollama start (manual, on-boot) always uses the right config.
+function Ensure-Ollama-Env {
+  $hasGpu = & $python -c "import hardware,sys; sys.exit(0 if hardware.has_gpu() else 1)" 2>$null; ($LASTEXITCODE -eq 0)
+  $kvType = if ($hasGpu) { "q8_0" } else { "q4_0" }
+  $vars = @{
+    OLLAMA_FLASH_ATTENTION = "1"
+    OLLAMA_KV_CACHE_TYPE   = $kvType
+    OLLAMA_GPU_OVERHEAD    = "0"
+  }
+  foreach ($k in $vars.Keys) {
+    $current = [System.Environment]::GetEnvironmentVariable($k, "User")
+    if ($current -ne $vars[$k]) {
+      [System.Environment]::SetEnvironmentVariable($k, $vars[$k], "User")
+      Write-Host "    Set $k=$($vars[$k]) (persistent)"
+    }
+    $env:$k = $vars[$k]
+  }
+  Write-Host "==> Ollama config: FLASH_ATTENTION=1  KV_CACHE=$kvType  GPU_OVERHEAD=0"
+}
+
 function Ensure-Ollama {
   if (-not (Have $OllamaBin)) { Install-Ollama }
-  if (OllamaUp) { Write-Host "==> Ollama already running."; return }
-  # GPU present: q8_0 KV cache (halves VRAM vs fp16, fits 7B in 8 GB).
-  # CPU-only:    q4_0 KV cache (cuts KV to 1/3, saves scarce RAM).
-  # Flash attention: 10-20% VRAM savings on Ampere+ GPUs, no quality loss.
-  $hasGpu = & $python -c "import hardware,sys; sys.exit(0 if hardware.has_gpu() else 1)" 2>$null; ($LASTEXITCODE -eq 0)
-  if (-not $env:OLLAMA_FLASH_ATTENTION) { $env:OLLAMA_FLASH_ATTENTION = "1" }
-  if (-not $env:OLLAMA_KV_CACHE_TYPE)   { $env:OLLAMA_KV_CACHE_TYPE = $(if ($hasGpu) { "q8_0" } else { "q4_0" }) }
-  if (-not $env:OLLAMA_GPU_OVERHEAD)     { $env:OLLAMA_GPU_OVERHEAD = "0" }
+  Ensure-Ollama-Env
+  if (OllamaUp) {
+    Write-Host "==> Ollama already running."
+    # If tray app started Ollama without our env vars, restart it.
+    $needsRestart = $false
+    try {
+      $ver = Invoke-RestMethod "$OllamaUrl/api/version" -TimeoutSec 2
+    } catch { $needsRestart = $true }
+    if (-not $needsRestart) { return }
+  }
   Write-Host "==> Starting Ollama ($OllamaBin)..."
-  Write-Host "    FLASH_ATTENTION=$env:OLLAMA_FLASH_ATTENTION  KV_CACHE=$env:OLLAMA_KV_CACHE_TYPE"
   $ollamaLog = "$env:TEMP\ollama.log"
   Start-Process -FilePath $OllamaBin -ArgumentList "serve" -WindowStyle Hidden -RedirectStandardOutput $ollamaLog -RedirectStandardError "$env:TEMP\ollama-err.log"
   for ($i = 0; $i -lt 30; $i++) { if (OllamaUp) { break }; Start-Sleep 1 }
@@ -101,5 +123,9 @@ python -m pip install -q -r requirements.txt
 Write-Host "==> Checking NPU model cache..."
 python convert.py --auto
 if ($LASTEXITCODE -ne 0) { Write-Host "WARN: NPU model preparation skipped/failed; continuing with Ollama." }
+# Pre-warm the default model on GPU so the first request is instant.
+Write-Host "==> Pre-loading model on GPU..."
+python -c "from backends.ollama import OllamaBackend; import registry, hardware; b=OllamaBackend(); m=registry.TASKS['reasoning'].pick_model(hardware.memory_budget_gb()); b.ensure_model(m); b.warm_model(m); print(f'  {m} loaded')"
+if ($LASTEXITCODE -ne 0) { Write-Host "WARN: Model pre-load failed; first request will be slower." }
 Write-Host "==> Launching UI at $UiUrl  (Ctrl+C to stop)"
 streamlit run app.py --server.address 0.0.0.0 --server.port 8501 --server.headless true

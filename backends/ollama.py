@@ -90,16 +90,37 @@ class OllamaBackend(Backend):
                     print(f"\r  {status:<60}", end="", file=sys.stderr, flush=True)
             print(file=sys.stderr)  # newline after progress
 
+    def _gpu_options(self) -> dict:
+        """Options to pass on every request to ensure GPU offload."""
+        opts: dict = {"num_ctx": self.DEFAULT_NUM_CTX}
+        if self.HAS_DEDICATED_GPU:
+            opts["num_gpu"] = 999
+        return opts
+
+    def warm_model(self, model: str) -> None:
+        """Pre-load model into GPU memory so the first real request is fast."""
+        try:
+            requests.post(
+                f"{self.host}/api/generate",
+                json={
+                    "model": model,
+                    "prompt": "",
+                    "stream": False,
+                    "keep_alive": "30m",
+                    "options": self._gpu_options(),
+                },
+                timeout=120,
+            )
+        except requests.RequestException:
+            pass
+
     def generate(self, model: str, prompt: str, image_path: str | None = None) -> str:
         payload: dict = {
             "model": model,
             "prompt": prompt,
             "stream": False,
-            "options": {
-                "temperature": 0,
-                "num_ctx": self.DEFAULT_NUM_CTX,
-                **({"num_gpu": 999} if self.HAS_DEDICATED_GPU else {}),
-            },
+            "keep_alive": "30m",
+            "options": {"temperature": 0, **self._gpu_options()},
         }
         if image_path:
             b64 = base64.b64encode(Path(image_path).read_bytes()).decode("utf-8")
@@ -110,7 +131,9 @@ class OllamaBackend(Backend):
 
     def embed(self, model: str, text: str) -> list[float]:
         resp = requests.post(
-            f"{self.host}/api/embeddings", json={"model": model, "prompt": text}, timeout=120
+            f"{self.host}/api/embeddings",
+            json={"model": model, "prompt": text, "keep_alive": "30m"},
+            timeout=120,
         )
         resp.raise_for_status()
         return resp.json().get("embedding", [])

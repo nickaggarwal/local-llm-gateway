@@ -114,5 +114,17 @@ fi
 echo "==> Checking NPU model cache..."
 python convert.py --auto || echo "WARN: NPU model preparation skipped/failed; continuing with Ollama."
 
+# Pre-warm the default model on GPU so the first request is instant.
+echo "==> Pre-loading model on GPU..."
+python -c "
+from backends.ollama import OllamaBackend
+import registry, hardware
+b = OllamaBackend()
+m = registry.TASKS['reasoning'].pick_model(hardware.memory_budget_gb())
+b.ensure_model(m)
+b.warm_model(m)
+print(f'  {m} loaded')
+" || echo "WARN: Model pre-load failed; first request will be slower."
+
 echo "==> Launching UI at $UI_URL  (Ctrl+C to stop)"
 exec streamlit run app.py --server.address 0.0.0.0 --server.port 8501 --server.headless true
