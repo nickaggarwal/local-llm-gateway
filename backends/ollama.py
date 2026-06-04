@@ -54,7 +54,7 @@ class OllamaBackend(Backend):
             ) from e
         if present:
             return
-        import sys
+        import json as _json, sys
         print(f"Downloading model {model} (first run, this may take a few minutes)...", file=sys.stderr)
         if on_progress:
             on_progress(f"downloading {model} (first use)...")
@@ -66,8 +66,24 @@ class OllamaBackend(Backend):
         ) as resp:
             resp.raise_for_status()
             for line in resp.iter_lines():
-                if line and on_progress:
-                    on_progress(line.decode("utf-8"))
+                if not line:
+                    continue
+                try:
+                    msg = _json.loads(line)
+                except (ValueError, TypeError):
+                    msg = {}
+                total = msg.get("total")
+                completed = msg.get("completed")
+                status = msg.get("status", "")
+                if total and completed:
+                    pct = completed * 100 // total
+                    done = pct // 5
+                    bar = "█" * done + "░" * (20 - done)
+                    size_gb = total / (1024 ** 3)
+                    print(f"\r  [{bar}] {pct}% of {size_gb:.1f} GB", end="", file=sys.stderr, flush=True)
+                elif status:
+                    print(f"\r  {status:<60}", end="", file=sys.stderr, flush=True)
+            print(file=sys.stderr)  # newline after progress
 
     def generate(self, model: str, prompt: str, image_path: str | None = None) -> str:
         payload: dict = {
