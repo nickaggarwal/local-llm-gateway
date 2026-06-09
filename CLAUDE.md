@@ -44,6 +44,14 @@ Dockerfile.sandbox  Image for the Docker executor (optional; not required anymor
 cli.py server.py app.py    The three front ends (all call gateway.run()).
 start.sh start.ps1         Native launchers (host Ollama + venv + UI; no flags, no Docker).
 
+desktop/          Installable desktop app (macOS .app/.dmg, Windows installer):
+  launcher.py     Unit-testable pieces: ports, Ollama discovery/serve env, child argv.
+  main.py         Entry point: pywebview window + Streamlit child process (re-execs
+                  the frozen binary with --streamlit-server; browser fallback).
+  gateway_app.spec     PyInstaller spec (app.py ships as data; gateway modules as
+                       hiddenimports; streamlit metadata/assets collected).
+  build_macos.sh build_windows.ps1 installer.iss   Build scripts + Inno Setup script.
+
 eval/
   candidates.py   LADDERS: per-task model ladder (sizes x quants x families) + RAM-fit math.
   scorers.py      One objective scorer per task kind (returns 0..1).
@@ -81,6 +89,11 @@ streamlit run app.py
 # Prepare NPU models ahead of first use (also auto-runs from the launcher)
 python convert.py reasoning            # detected NPU
 python convert.py --all --backend amd-npu
+
+# Desktop app: run unfrozen, or build the installer (PyInstaller; see desktop/)
+python -m desktop.main                 # dev run: window + Streamlit child, no build
+./desktop/build_macos.sh               # -> dist/Local LLM Gateway.app + LocalLLMGateway.dmg
+.\desktop\build_windows.ps1            # -> dist\LocalLLMGateway-Setup.exe (or portable zip)
 
 # Eval / bake-off (drives Ollama directly)
 python eval/gen_images.py            # regenerate OCR images + ocr.json (once)
@@ -197,6 +210,28 @@ CLI (`tasks…`, `--all`, `--auto`, `--backend`, `--model`); the launcher runs
 `start.sh` / `start.ps1` run native only (no Docker, no flags). When **Intel is the only
 GPU** (no NVIDIA/AMD for stock Ollama to use), they launch an IPEX-LLM Ollama build instead
 of stock Ollama (set `IPEX_LLM_OLLAMA=/path/to/ollama`) with the SYCL env exported.
+
+### Desktop app (`desktop/`)
+
+An installable macOS/Windows app around the Streamlit UI, frozen with PyInstaller
+(`requirements-desktop.txt`: pyinstaller + pywebview). One binary, two roles routed by
+argv: the default role ensures Ollama is up (discovers the binary on PATH and in the
+official install locations, starts `ollama serve` detached with the same
+FLASH_ATTENTION/KV-cache env as `start.sh`, or shows an install page and polls), then
+spawns itself with `--streamlit-server` as a child process and shows the UI in a
+pywebview window (default browser if pywebview is missing). The child role runs
+`streamlit.web.cli` in its own main thread (Streamlit's signal handlers can't install
+from a non-main thread, hence a child process rather than a thread).
+
+Packaging quirks encoded in `gateway_app.spec`: `app.py` ships as a **data file**
+(Streamlit executes it from disk, located via `launcher.repo_root()` →
+`sys._MEIPASS`), so `gateway`/`registry`/`backends`/`executors` must be listed as
+`hiddenimports`; Streamlit needs `copy_metadata` + `collect_data_files`; and
+`--global.developmentMode=false` is passed explicitly because frozen Streamlit
+can't find its pip metadata otherwise. On exit the app terminates only the
+Streamlit child — Ollama is left running (parity with `start.sh`, keeps models
+loaded). Logic is split so `launcher.py` stays unit-testable without windows or
+processes; `main.py` owns orchestration.
 
 ### Agent execution (`executors/`)
 

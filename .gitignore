@@ -1,7 +1,11 @@
 __pycache__/
 *.pyc
 .venv/
+.venv-desktop/
 .pytest_cache/
+# desktop app build outputs (PyInstaller)
+build/
+dist/
 .claude/
 *.png
 *.jpg

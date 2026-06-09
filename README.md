@@ -24,6 +24,36 @@ local virtualenv, installs deps, prepares NPU models if an NPU is present (`conv
 
 Then open **http://localhost:8501**. (Prefer containers? See [Docker](#quick-start-docker--easiest) below.)
 
+## Desktop app (installable, macOS / Windows)
+
+Prefer a double-clickable app over a terminal? Build a native installer — a
+self-contained bundle (Python and all deps frozen in) that opens the UI in its own
+window. It finds Ollama (or walks you through installing it), starts it with the
+same GPU-tuned settings as the launcher, and runs the gateway entirely locally.
+
+**macOS** — builds `dist/Local LLM Gateway.app` and a drag-to-Applications
+`dist/LocalLLMGateway.dmg`:
+
+```bash
+./desktop/build_macos.sh
+```
+
+**Windows** — builds `dist\LocalLLMGateway-Setup.exe` (needs
+[Inno Setup](https://jrsoftware.org/isinfo.php); falls back to a portable zip
+without it):
+
+```powershell
+.\desktop\build_windows.ps1
+```
+
+The only thing the app expects on the machine is [Ollama](https://ollama.com/download);
+if it's missing, the app shows an install link and continues automatically once
+Ollama is up. To try the app without building it: `python -m desktop.main`.
+
+> The macOS build is ad-hoc signed; for distribution outside your own machine,
+> re-sign with a Developer ID certificate and notarize (see comments in
+> `desktop/build_macos.sh`).
+
 ## Quick start (Docker — easiest)
 
 Requires only [Docker](https://docs.docker.com/get-docker/). No Python, no Ollama install.

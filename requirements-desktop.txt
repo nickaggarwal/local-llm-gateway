@@ -1,0 +1,5 @@
+# Desktop app build/runtime deps (not needed for the CLI/API/UI front ends).
+#   pip install -r requirements-desktop.txt
+# Build installers with desktop/build_macos.sh / desktop/build_windows.ps1.
+pyinstaller>=6.6
+pywebview>=5.1     # native window; pulls pyobjc (macOS) / WebView2 bits (Windows)
