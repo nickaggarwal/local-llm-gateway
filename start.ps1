@@ -75,13 +75,15 @@ function Install-Ollama {
 # Persist GPU-optimized Ollama env vars so the tray app and any future
 # Ollama start (manual, on-boot) always uses the right config.
 function Ensure-Ollama-Env {
-  & $python -c "import hardware,sys; sys.exit(0 if hardware.has_gpu() else 1)" 2>$null
-  if ($LASTEXITCODE -eq 0) { $kvType = "q8_0" } else { $kvType = "q4_0" }
+  # q8_0 KV cache everywhere: halves VRAM/RAM vs fp16 with negligible quality
+  # loss. q4_0 is too aggressive — it corrupts vision models (qwen2.5-VL),
+  # which then emit empty/garbage output.
+  $kvType = "q8_0"
   $vars = @{
     OLLAMA_FLASH_ATTENTION  = "1"
     OLLAMA_KV_CACHE_TYPE    = $kvType
     OLLAMA_GPU_OVERHEAD     = "0"
-    OLLAMA_CONTEXT_LENGTH   = "2048"
+    OLLAMA_CONTEXT_LENGTH   = "8192"
   }
   foreach ($k in $vars.Keys) {
     $current = [System.Environment]::GetEnvironmentVariable($k, "User")

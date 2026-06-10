@@ -65,15 +65,14 @@ install_ollama() {
 ensure_ollama_host() {
   have "$OLLAMA_BIN" || install_ollama
   if ollama_up; then echo "==> Ollama already running."; return; fi
-  # GPU present: q8_0 KV cache (halves VRAM vs fp16, fits 7B in 8 GB).
-  # CPU-only:    q4_0 KV cache (cuts KV to 1/3, saves scarce RAM).
+  # q8_0 KV cache everywhere: halves VRAM/RAM vs fp16 with negligible quality
+  # loss. (q4_0 is too aggressive — it corrupts vision models like qwen2.5-VL,
+  # which then emit empty/garbage output.)
   # Flash attention: 10-20% VRAM savings on Ampere+ GPUs, no quality loss.
-  local kv_default="q4_0"
-  "$PYTHON" -c "import hardware,sys; sys.exit(0 if hardware.has_gpu() else 1)" 2>/dev/null && kv_default="q8_0"
   export OLLAMA_FLASH_ATTENTION="${OLLAMA_FLASH_ATTENTION:-1}"
-  export OLLAMA_KV_CACHE_TYPE="${OLLAMA_KV_CACHE_TYPE:-$kv_default}"
+  export OLLAMA_KV_CACHE_TYPE="${OLLAMA_KV_CACHE_TYPE:-q8_0}"
   export OLLAMA_GPU_OVERHEAD="${OLLAMA_GPU_OVERHEAD:-0}"
-  export OLLAMA_CONTEXT_LENGTH="${OLLAMA_CONTEXT_LENGTH:-2048}"
+  export OLLAMA_CONTEXT_LENGTH="${OLLAMA_CONTEXT_LENGTH:-8192}"
   echo "==> Starting Ollama ($OLLAMA_BIN)..."
   echo "    FLASH_ATTENTION=$OLLAMA_FLASH_ATTENTION  KV_CACHE=$OLLAMA_KV_CACHE_TYPE"
   "$OLLAMA_BIN" serve >"${TMPDIR:-/tmp}/ollama.log" 2>&1 &

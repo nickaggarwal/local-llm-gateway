@@ -73,15 +73,16 @@ def test_ollama_base_url_env(monkeypatch):
 
 # --- serve env (start.sh parity) ----------------------------------------------
 
-@pytest.mark.parametrize("gpu,kv", [(True, "q8_0"), (False, "q4_0")])
-def test_ollama_serve_env_kv_cache(monkeypatch, gpu, kv):
+@pytest.mark.parametrize("gpu", [True, False])
+def test_ollama_serve_env_kv_cache(monkeypatch, gpu):
+    # q8_0 everywhere (GPU or CPU): q4_0 corrupts vision models (qwen2.5-VL).
     import hardware
 
     monkeypatch.setattr(hardware, "has_gpu", lambda: gpu)
     monkeypatch.delenv("OLLAMA_KV_CACHE_TYPE", raising=False)
     monkeypatch.delenv("OLLAMA_FLASH_ATTENTION", raising=False)
     env = launcher.ollama_serve_env()
-    assert env["OLLAMA_KV_CACHE_TYPE"] == kv
+    assert env["OLLAMA_KV_CACHE_TYPE"] == "q8_0"
     assert env["OLLAMA_FLASH_ATTENTION"] == "1"
 
 
