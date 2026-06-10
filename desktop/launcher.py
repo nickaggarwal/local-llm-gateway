@@ -67,16 +67,15 @@ def find_ollama() -> str | None:
 
 
 def ollama_serve_env() -> dict[str, str]:
-    """Env for `ollama serve`, matching start.sh: flash attention on, KV cache
-    q8_0 with a GPU (halves VRAM vs fp16) or q4_0 on CPU (saves scarce RAM).
-    User-exported values win."""
-    import hardware
-
+    """Env for `ollama serve`, matching start.sh: flash attention on, q8_0 KV
+    cache everywhere (halves VRAM/RAM vs fp16 with negligible quality loss).
+    q4_0 is too aggressive — it corrupts vision models like qwen2.5-VL, which
+    then emit empty/garbage output. User-exported values win."""
     env = dict(os.environ)
     env.setdefault("OLLAMA_FLASH_ATTENTION", "1")
-    env.setdefault("OLLAMA_KV_CACHE_TYPE", "q8_0" if hardware.has_gpu() else "q4_0")
+    env.setdefault("OLLAMA_KV_CACHE_TYPE", "q8_0")
     env.setdefault("OLLAMA_GPU_OVERHEAD", "0")
-    env.setdefault("OLLAMA_CONTEXT_LENGTH", "2048")
+    env.setdefault("OLLAMA_CONTEXT_LENGTH", "8192")
     return env
 
 
